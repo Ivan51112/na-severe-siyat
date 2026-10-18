@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Каталог загруженных фотографий — Aurora Polaris</title>
+  <style>
+    :root {
+      --bg: #07131c;
+      --card-bg: #0d222e;
+      --text: #e9f1ef;
+      --muted: #8da4a8;
+      --border: rgba(165, 196, 203, 0.2);
+      --green: #3cd48a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 30px 20px 80px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { font-size: 26px; margin-bottom: 8px; color: #fff; }
+    p.sub { font-size: 14px; color: var(--muted); margin-bottom: 30px; }
+    
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--green);
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .photo-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .previews {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    /* Rectangular preview */
+    .rect-preview {
+      flex: 1;
+      height: 120px;
+      background: #040a10;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .rect-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Round Viewfinder preview (as on site) */
+    .round-orbit {
+      width: 90px;
+      height: 90px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(165, 196, 203, 0.4);
+      padding: 3px;
+      box-shadow: 0 0 0 3px rgba(165, 196, 203, 0.08);
+    }
+    .round-scene {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #000;
+    }
+    .round-scene img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .meta strong { color: #fff; display: block; font-size: 13px; margin-bottom: 2px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: rgba(60, 212, 138, 0.15);
+      color: var(--green);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+    }
+    .btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: #153847;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: 0.2s;
+    }
+    .btn:hover {
+      background: #1c4b5f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Каталог ваших загруженных фотографий</h1>
+    <p class="sub">Все фото сконвертированы в веб-формат и подготовлены для видоискателя сайта (справа показан круглый вид, как на сайте).</p>
+
+    <!-- МУРМАНСК -->
+    <div class="section-title">📍 Мурманск (8 снимков)</div>
+    <div class="gallery-grid" id="grid-murmansk"></div>
+
+    <!-- ТЕРИБЕРКА -->
+    <div class="section-title">📍 Териберка (7 снимков)</div>
+    <div class="gallery-grid" id="grid-teriberka"></div>
+
+    <!-- КИРОВСК -->
+    <div class="section-title">📍 Кировск (8 снимков)</div>
+    <div class="gallery-grid" id="grid-kirovsk"></div>
+  </div>
+
+  <script>
+    const photos = {
+      murmansk: [
+        { file: 'public/images/user_photos/murmansk/murmansk_1.jpg', name: 'murmansk_1.jpg', orig: 'Снимок экрана в 21.45.50', size: '860×232' },
+        { file: 'public/images/user_photos/murmansk/murmansk_2.jpg', name: 'murmansk_2.jpg', orig: 'Снимок экрана в 21.46.00', size: '860×232' },
+        { file: 'public/images/user_photos/murmansk/murmansk_3.jpg', name: 'murmansk_3.jpg', orig: 'Снимок экрана в 21.46.11', size: '860×232' },
+        { file: 'public/images/user_photos/murmansk/murmansk_4.jpg', name: 'murmansk_4.jpg', orig: 'Снимок экрана в 21.46.19', size: '860×232' },
+        { file: 'public/images/user_photos/murmansk/murmansk_5.jpg', name: 'murmansk_5.jpg', orig: 'Снимок экрана в 21.46.29', size: '860×232' },
+        { file: 'public/images/user_photos/murmansk/murmansk_6.jpg', name: 'murmansk_6.jpg', orig: 'Снимок экрана в 21.46.36', size: '860×232' },
+        { file: 'public/images/user_photos/murmansk/murmansk_7.jpg', name: 'murmansk_7.jpg', orig: 'Снимок экрана в 21.47.54', size: '1720×930 (Общий вид)' },
+        { file: 'public/images/user_photos/murmansk/murmansk_8.jpg', name: 'murmansk_8.jpg', orig: 'Снимок экрана в 21.48.15', size: '1464×816 (Панорама)' }
+      ],
+      teriberka: [
+        { file: 'public/images/user_photos/teriberka/teriberka_1.jpg', name: 'teriberka_1.jpg', orig: 'Снимок экрана в 21.39.45', size: '708×956 (Общий план)' },
+        { file: 'public/images/user_photos/teriberka/teriberka_2.jpg', name: 'teriberka_2.jpg', orig: 'Снимок экрана в 21.40.25', size: '354×476 (Квадрант 1)' },
+        { file: 'public/images/user_photos/teriberka/teriberka_3.jpg', name: 'teriberka_3.jpg', orig: 'Снимок экрана в 21.40.38', size: '354×476 (Квадрант 2)' },
+        { file: 'public/images/user_photos/teriberka/teriberka_4.jpg', name: 'teriberka_4.jpg', orig: 'Снимок экрана в 21.40.50', size: '354×476 (Квадрант 3)' },
+        { file: 'public/images/user_photos/teriberka/teriberka_5.jpg', name: 'teriberka_5.jpg', orig: 'Снимок экрана в 21.41.06', size: '354×476 (Квадрант 4)' },
+        { file: 'public/images/user_photos/teriberka/teriberka_6.jpg', name: 'teriberka_6.jpg', orig: 'Снимок экрана в 21.41.25', size: '710×950 (Детальный)' },
+        { file: 'public/images/user_photos/teriberka/teriberka_7.jpg', name: 'teriberka_7.jpg', orig: 'Снимок экрана в 21.42.26', size: '710×950 (Детальный)' }
+      ],
+      kirovsk: [
+        { file: 'public/images/user_photos/kirovsk/kirovsk_1.jpg', name: 'kirovsk_1.jpg', orig: 'Снимок экрана в 21.52.12', size: '1464×816 (Общий план)' },
+        { file: 'public/images/user_photos/kirovsk/kirovsk_2.jpg', name: 'kirovsk_2.jpg', orig: 'Снимок экрана в 21.54.13', size: '732×306 (Квадрант 1)' },
+        { file: 'public/images/user_photos/kirovsk/kirovsk_3.jpg', name: 'kirovsk_3.jpg', orig: 'Снимок экрана в 21.54.21', size: '732×306 (Квадрант 2)' },
+        { file: 'public/images/user_photos/kirovsk/kirovsk_4.jpg', name: 'kirovsk_4.jpg', orig: 'Снимок экрана в 21.54.28', size: '732×306 (Квадрант 3)' },
+        { file: 'public/images/user_photos/kirovsk/kirovsk_5.jpg', name: 'kirovsk_5.jpg', orig: 'Снимок экрана в 21.54.36', size: '732×306 (Квадрант 4)' },
+        { file: 'public/images/user_photos/kirovsk/kirovsk_6.jpg', name: 'kirovsk_6.jpg', orig: 'Снимок экрана в 21.54.47', size: '540×224' },
+        { file: 'public/images/user_photos/kirovsk/kirovsk_7.jpg', name: 'kirovsk_7.jpg', orig: 'Снимок экрана в 21.54.55', size: '540×224' },
+        { file: 'public/images/user_photos/kirovsk/kirovsk_8.jpg', name: 'kirovsk_8.jpg', orig: 'Снимок экрана в 21.55.07', size: '540×210' }
+      ]
+    };
+
+    function renderCity(cityId, items) {
+      const container = document.getElementById('grid-' + cityId);
+      items.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+        card.innerHTML = `
+          <div class="previews">
+            <div class="rect-preview">
+              <img src="${p.file}" alt="${p.name}" loading="lazy">
+            </div>
+            <div class="round-orbit">
+              <div class="round-scene">
+                <img src="${p.file}" alt="${p.name}" loading="lazy">
+              </div>
+            </div>
+          </div>
+          <div class="meta">
+            <strong>${p.name}</strong>
+            <div>${p.orig}</div>
+            <div class="badge">${p.size}</div>
+          </div>
+          <div class="actions">
+            <a href="${p.file}" target="_blank" class="btn">Открыть оригинал</a>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    renderCity('murmansk', photos.murmansk);
+    renderCity('teriberka', photos.teriberka);
+    renderCity('kirovsk', photos.kirovsk);
+  </script>
+</body>
+</html>

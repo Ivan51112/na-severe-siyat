@@ -1,0 +1,163 @@
+.ap-hourly-card {
+  border: 1px solid rgba(165, 196, 203, 0.17);
+  border-radius: 18px;
+  background: linear-gradient(150deg, rgba(15, 35, 46, 0.94), rgba(7, 19, 29, 0.96));
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.ap-hourly-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.ap-hourly-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 4px;
+  color: #edf6f3;
+  font-size: clamp(18px, 2.4vw, 24px);
+  line-height: 1.2;
+}
+
+.ap-hourly-heading h2 svg { color: #76c7a3; flex: none; }
+.ap-hourly-heading p { margin: 0; color: #98aeb2; font-size: 12px; }
+
+.ap-hourly-demo {
+  flex: none;
+  border: 1px solid rgba(245, 193, 80, 0.4);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(245, 193, 80, 0.09);
+  color: #f7ca70;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+}
+
+.ap-hourly-comparison {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 9px 14px;
+  margin: 19px 0 16px;
+}
+
+.ap-hourly-comparison-label {
+  color: #8fa8ab;
+  font-size: 11px;
+  width: 100%;
+}
+
+.ap-hourly-comparison strong { font-size: clamp(16px, 2.2vw, 22px); letter-spacing: -0.02em; }
+.ap-hourly-low { color: #d2e1e1; }
+.ap-hourly-high { color: #6de3a7; }
+.ap-hourly-arrow { color: #66888d; font-size: 20px; }
+
+.ap-hourly-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-color: #42636c transparent;
+  scrollbar-width: thin;
+  padding-bottom: 7px;
+}
+
+.ap-hourly-chart {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(38px, 1fr));
+  gap: 4px;
+  min-width: 1004px;
+  border-bottom: 1px solid rgba(165, 196, 203, 0.18);
+}
+
+.ap-hourly-column {
+  position: relative;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 2px 1px 7px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: #9db4b7;
+  cursor: pointer;
+}
+
+.ap-hourly-column:hover,
+.ap-hourly-column[aria-pressed="true"] { background: rgba(112, 190, 164, 0.1); }
+.ap-hourly-column:focus-visible { outline: 2px solid #75d7aa; outline-offset: -2px; }
+.ap-hourly-column.is-next-day { box-shadow: -1px 0 0 rgba(165, 196, 203, 0.35); }
+
+.ap-hourly-value {
+  height: 16px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #b6c9ca;
+  white-space: nowrap;
+}
+.ap-hourly-column.is-peak .ap-hourly-value { color: #8df0bc; }
+
+.ap-hourly-track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 102px;
+  padding: 0 3px;
+  background: repeating-linear-gradient(to top, rgba(165, 196, 203, 0.07) 0 1px, transparent 1px 25%);
+}
+
+.ap-hourly-bar {
+  display: block;
+  width: 100%;
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(0deg, #426f7d, #83b7b6);
+  transition: filter 0.2s ease;
+}
+.ap-hourly-column.is-peak .ap-hourly-bar { background: linear-gradient(0deg, #238463, #6be4a2); }
+.ap-hourly-column.is-daylight .ap-hourly-bar { background: #3c535b; }
+.ap-hourly-column:hover .ap-hourly-bar { filter: brightness(1.2); }
+
+.ap-hourly-time {
+  height: 15px;
+  color: #91a9ad;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ap-hourly-column.is-next-day .ap-hourly-time { color: #e5f2ed; font-weight: 700; }
+
+.ap-hourly-bottom {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 12px;
+  color: #8fa8ab;
+  font-size: 11px;
+}
+.ap-hourly-selection strong { color: #e6f6ef; font-size: 13px; }
+.ap-hourly-hint { margin: 9px 0 0; color: #819a9f; font-size: 11px; }
+.ap-hourly-note {
+  margin: 15px 0 0;
+  border-top: 1px solid rgba(165, 196, 203, 0.12);
+  padding-top: 12px;
+  color: #9ab0b3;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 680px) {
+  .ap-hourly-card { padding: 16px; }
+  .ap-hourly-heading { flex-direction: column; gap: 9px; }
+  .ap-hourly-comparison { margin-top: 16px; }
+  .ap-hourly-comparison strong { font-size: 17px; }
+  .ap-hourly-track { height: 88px; }
+}

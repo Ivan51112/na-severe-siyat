@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Inspect Uploaded Photos</title>
+<style>
+  body { background: #111; color: #eee; font-family: sans-serif; padding: 20px; }
+  h2 { border-bottom: 1px solid #444; padding-bottom: 8px; margin-top: 30px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 15px; }
+  .card { background: #222; border-radius: 8px; padding: 10px; max-width: 380px; }
+  .card img { max-width: 100%; height: auto; border-radius: 4px; display: block; }
+  .meta { font-size: 11px; color: #aaa; margin-top: 6px; word-break: break-all; }
+</style>
+</head>
+<body>
+<h1>Обзор загруженных скриншотов / фото</h1>
+
+<h2>Фото Мурманск</h2>
+<div class="grid" id="murmansk"></div>
+
+<h2>Фото тириберка</h2>
+<div class="grid" id="teriberka"></div>
+
+<h2>Кировск</h2>
+<div class="grid" id="kirovsk"></div>
+
+<script>
+const data = {
+  murmansk: [
+    "Снимок экрана — 2026-09-25 в 21.45.50.png",
+    "Снимок экрана — 2026-09-25 в 21.46.00.png",
+    "Снимок экрана — 2026-09-25 в 21.46.11.png",
+    "Снимок экрана — 2026-09-25 в 21.46.19.png",
+    "Снимок экрана — 2026-09-25 в 21.46.29.png",
+    "Снимок экрана — 2026-09-25 в 21.46.36.png",
+    "Снимок экрана — 2026-09-25 в 21.47.54.png",
+    "Снимок экрана — 2026-09-25 в 21.48.15.png"
+  ],
+  teriberka: [
+    "Снимок экрана — 2026-09-25 в 21.39.45.png",
+    "Снимок экрана — 2026-09-25 в 21.40.25.png",
+    "Снимок экрана — 2026-09-25 в 21.40.38.png",
+    "Снимок экрана — 2026-09-25 в 21.40.50.png",
+    "Снимок экрана — 2026-09-25 в 21.41.06.png",
+    "Снимок экрана — 2026-09-25 в 21.41.25.png",
+    "Снимок экрана — 2026-09-25 в 21.42.26.png"
+  ],
+  kirovsk: [
+    "Снимок экрана — 2026-09-25 в 21.52.12.png",
+    "Снимок экрана — 2026-09-25 в 21.54.13.png",
+    "Снимок экрана — 2026-09-25 в 21.54.21.png",
+    "Снимок экрана — 2026-09-25 в 21.54.28.png",
+    "Снимок экрана — 2026-09-25 в 21.54.36.png",
+    "Снимок экрана — 2026-09-25 в 21.54.47.png",
+    "Снимок экрана — 2026-09-25 в 21.54.55.png",
+    "Снимок экрана — 2026-09-25 в 21.55.07.png"
+  ]
+};
+
+function render() {
+  for (const [key, list] of Object.entries(data)) {
+    const container = document.getElementById(key);
+    let folder = key === 'murmansk' ? 'Фото Мурманск' : key === 'teriberka' ? 'Фото тириберка' : 'Кировск';
+    list.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const encoded = encodeURIComponent(item);
+      card.innerHTML = `<img src="${encodeURIComponent(folder)}/${encoded}"><div class="meta">${item}</div>`;
+      container.appendChild(card);
+    });
+  }
+}
+render();
+</script>
+</body>
+</html>
