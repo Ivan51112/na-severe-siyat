@@ -271,6 +271,37 @@ export function MarioAuroraScene({
       >
         {/* DYNAMIC AURORA SKY: Reacts to forecast! */}
         <div className={`mario-aurora-sky aurora-mode-${auroraState}`}>
+          {/* MURMANSK COAT OF ARMS HERALDIC AURORA RAYS */}
+          <div className="murmansk-heraldic-aurora">
+            <svg viewBox="0 0 360 110" className="heraldic-aurora-svg" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="murmanskGoldGreen" x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" stopColor="#eab308" stopOpacity="0.15" />
+                  <stop offset="35%" stopColor="#fde047" stopOpacity="0.85" />
+                  <stop offset="70%" stopColor="#22c55e" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="#4ade80" stopOpacity="0.2" />
+                </linearGradient>
+                <filter id="heraldicGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <g className="heraldic-rays" filter="url(#heraldicGlow)">
+                {/* 10 radiating rays in Murmansk coat of arms geometry */}
+                <polygon points="35,110 42,110 48,45 28,45" className="h-ray ray-1" fill="url(#murmanskGoldGreen)" />
+                <polygon points="62,110 70,110 78,32 54,32" className="h-ray ray-2" fill="url(#murmanskGoldGreen)" />
+                <polygon points="92,110 100,110 110,20 82,20" className="h-ray ray-3" fill="url(#murmanskGoldGreen)" />
+                <polygon points="122,110 130,110 144,10 114,10" className="h-ray ray-4" fill="url(#murmanskGoldGreen)" />
+                <polygon points="152,110 162,110 178,3 146,3" className="h-ray ray-5" fill="url(#murmanskGoldGreen)" />
+                <polygon points="186,110 196,110 214,3 182,3" className="h-ray ray-6" fill="url(#murmanskGoldGreen)" />
+                <polygon points="218,110 226,110 246,10 216,10" className="h-ray ray-7" fill="url(#murmanskGoldGreen)" />
+                <polygon points="248,110 256,110 274,20 246,20" className="h-ray ray-8" fill="url(#murmanskGoldGreen)" />
+                <polygon points="278,110 286,110 302,32 278,32" className="h-ray ray-9" fill="url(#murmanskGoldGreen)" />
+                <polygon points="306,110 314,110 326,45 306,45" className="h-ray ray-10" fill="url(#murmanskGoldGreen)" />
+              </g>
+            </svg>
+          </div>
+
           <div className="aurora-wave wave-1" />
           <div className="aurora-wave wave-2" />
           <div className="aurora-wave wave-3" />
