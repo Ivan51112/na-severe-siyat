@@ -21,7 +21,9 @@ export function MarioAuroraScene({
   onHit,
 }: MarioAuroraSceneProps) {
   // Bus and character states
-  const [busState, setBusState] = useState<'driving' | 'parked' | 'ready'>('ready');
+  type BusStatus = 'driving_in' | 'parked' | 'driving_out' | 'gone';
+  const [busState, setBusState] = useState<BusStatus>('driving_in');
+  const [marioOut, setMarioOut] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
   const [isBlockHit, setIsBlockHit] = useState(false);
   const [auroraScore, setAuroraScore] = useState(0);
@@ -43,22 +45,35 @@ export function MarioAuroraScene({
 
   // Whenever city changes, trigger the tourist bus arrival!
   useEffect(() => {
-    setBusState('driving');
+    setBusState('driving_in');
+    setMarioOut(false);
     setAuroraState('idle');
 
-    // Bus drives in, parks after 1.1s
+    // 1. Bus parks after 1.0s
     const t1 = setTimeout(() => {
       setBusState('parked');
-    }, 1100);
+    }, 1000);
 
-    // Mario steps out after 1.6s
+    // 2. Mario steps out after 1.3s
     const t2 = setTimeout(() => {
-      setBusState('ready');
-    }, 1700);
+      setMarioOut(true);
+    }, 1300);
+
+    // 3. Bus drives off into the tundra after 1.9s, leaving Mario
+    const t3 = setTimeout(() => {
+      setBusState('driving_out');
+    }, 1900);
+
+    // 4. Bus completely vanishes after 2.7s
+    const t4 = setTimeout(() => {
+      setBusState('gone');
+    }, 2700);
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
     };
   }, [city]);
 
@@ -135,7 +150,7 @@ export function MarioAuroraScene({
   };
 
   const handleJump = () => {
-    if (isJumping || busState !== 'ready') return;
+    if (isJumping || !marioOut) return;
 
     setIsJumping(true);
     play8BitSound('jump');
@@ -441,61 +456,69 @@ export function MarioAuroraScene({
           ))}
         </div>
 
-        {/* TOURIST BUS: MERCEDES SPRINTER ARRIVES IN TUNDRA */}
-        <div className={`tourist-sprinter ${busState}`}>
-          <svg viewBox="0 0 160 80" className="sprinter-svg" aria-label="Туристический микроавтобус Mercedes Sprinter">
-            {/* Front Headlights Beam illuminating tundra */}
-            <polygon points="150,56 220,40 220,75 150,66" fill="url(#sprinterLightGlow)" opacity="0.6" />
-            <defs>
-              <linearGradient id="sprinterLightGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#fef08a" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#fef08a" stopOpacity="0" />
-              </linearGradient>
-            </defs>
+        {/* TOURIST BUS: MERCEDES SPRINTER (CLEAN WHITE, NO POLICE STRIPE, NO LUGGAGE) */}
+        {busState !== 'gone' && (
+          <div className={`tourist-sprinter ${busState}`}>
+            <svg viewBox="0 0 160 80" className="sprinter-svg" aria-label="Туристический микроавтобус Mercedes Sprinter">
+              {/* Front Headlights Beam illuminating tundra */}
+              <polygon points="150,56 220,40 220,75 150,66" fill="url(#sprinterLightGlow)" opacity="0.6" />
+              <defs>
+                <linearGradient id="sprinterLightGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#fef08a" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#fef08a" stopOpacity="0" />
+                </linearGradient>
+              </defs>
 
-            {/* Van Body (White / Silver Sprinter) */}
-            <path
-              d="M10,24 L110,24 C120,24 135,32 142,44 L152,50 C155,52 155,56 155,62 L152,66 L10,66 C8,66 6,64 6,60 L6,28 C6,25 8,24 10,24 Z"
-              fill="#f8fafc"
-              stroke="#0f172a"
-              strokeWidth="2.5"
-            />
-            {/* Dark Tinted Side & Front Windows */}
-            <rect x="16" y="28" width="22" height="14" fill="#0f172a" rx="1.5" />
-            <rect x="42" y="28" width="22" height="14" fill="#0f172a" rx="1.5" />
-            <rect x="68" y="28" width="22" height="14" fill="#0f172a" rx="1.5" />
-            <path d="M94,28 L114,28 C122,28 132,36 136,44 L94,44 Z" fill="#0f172a" />
+              {/* Clean Luxury White Sprinter Body */}
+              <path
+                d="M10,22 L112,22 C122,22 136,30 143,42 L152,48 C155,50 155,54 155,60 L152,66 L10,66 C8,66 6,64 6,60 L6,26 C6,23 8,22 10,22 Z"
+                fill="#ffffff"
+                stroke="#0f172a"
+                strokeWidth="2.5"
+              />
 
-            {/* Tourist Expedition Logo Stripe on Side */}
-            <rect x="12" y="46" width="130" height="5" fill="#0284c7" />
-            <text x="20" y="50" fill="#facc15" fontSize="3.5" fontWeight="bold" fontFamily="sans-serif">
-              ✨ ТУР «НА СЕВЕРЕ — СИЯТЬ»
-            </text>
+              {/* Tinted Panoramic Windows */}
+              <rect x="16" y="27" width="22" height="15" fill="#0f172a" rx="2" />
+              <rect x="42" y="27" width="22" height="15" fill="#0f172a" rx="2" />
+              <rect x="68" y="27" width="22" height="15" fill="#0f172a" rx="2" />
+              <path d="M94,27 L114,27 C122,27 132,35 136,42 L94,42 Z" fill="#0f172a" />
 
-            {/* Mercedes Chrome Grille & Star */}
-            <rect x="146" y="53" width="7" height="8" fill="#1e293b" rx="1" />
-            <circle cx="149.5" cy="57" r="2.5" fill="#cbd5e1" />
+              {/* Mercedes Front Grille & Chrome Star */}
+              <rect x="146" y="52" width="7" height="9" fill="#1e293b" rx="1.5" />
+              <circle cx="149.5" cy="56.5" r="3" fill="#cbd5e1" />
+              <line x1="149.5" y1="53.5" x2="149.5" y2="59.5" stroke="#0f172a" strokeWidth="0.8" />
+              <line x1="147" y1="58" x2="152" y2="55" stroke="#0f172a" strokeWidth="0.8" />
 
-            {/* Glowing Headlight */}
-            <rect x="148" y="51" width="5" height="3" fill="#fef08a" rx="1" />
+              {/* Headlight */}
+              <rect x="148" y="49" width="5" height="3.5" fill="#fef08a" rx="1" />
 
-            {/* Wheels with mudguards */}
-            <circle cx="34" cy="66" r="10" fill="#0f172a" />
-            <circle cx="34" cy="66" r="5" fill="#94a3b8" />
-            <circle cx="124" cy="66" r="10" fill="#0f172a" />
-            <circle cx="124" cy="66" r="5" fill="#94a3b8" />
+              {/* Back Wheel with HIGHLY VISIBLE rotating contrast spokes */}
+              <g className={`wheel-unit ${busState.includes('driving') ? 'is-spinning' : ''}`}>
+                <circle cx="34" cy="66" r="11" fill="#0f172a" />
+                <circle cx="34" cy="66" r="7.5" fill="#334155" />
+                {/* 4-spoke bright yellow/white star */}
+                <line x1="34" y1="58.5" x2="34" y2="73.5" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="26.5" y1="66" x2="41.5" y2="66" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="34" cy="66" r="3" fill="#ffffff" />
+              </g>
 
-            {/* Expedition Roof Rack with luggage/skis */}
-            <rect x="20" y="20" width="75" height="3" fill="#334155" />
-            <rect x="25" y="16" width="22" height="4" fill="#dc2626" rx="1" />
-            <rect x="52" y="16" width="26" height="4" fill="#059669" rx="1" />
-          </svg>
-        </div>
+              {/* Front Wheel with HIGHLY VISIBLE rotating contrast spokes */}
+              <g className={`wheel-unit ${busState.includes('driving') ? 'is-spinning' : ''}`}>
+                <circle cx="124" cy="66" r="11" fill="#0f172a" />
+                <circle cx="124" cy="66" r="7.5" fill="#334155" />
+                {/* 4-spoke bright yellow/white star */}
+                <line x1="124" y1="58.5" x2="124" y2="73.5" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="116.5" y1="66" x2="131.5" y2="66" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="124" cy="66" r="3" fill="#ffffff" />
+              </g>
+            </svg>
+          </div>
+        )}
 
         {/* MARIO ARCTIC HUNTER: Steps out of Sprinter & Jumps */}
         <div
           className={`mario-character ${isJumping ? 'is-jumping' : ''} ${
-            busState === 'driving' ? 'is-inside-bus' : 'is-outside-bus'
+            marioOut ? 'is-outside-bus' : 'is-inside-bus'
           }`}
         >
           <svg viewBox="0 0 44 56" className="mario-svg" aria-label="Марио Охотник за сиянием">
