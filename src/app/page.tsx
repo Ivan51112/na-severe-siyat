@@ -261,6 +261,26 @@ export default function HomePage() {
             ))}
           </nav>
 
+          {/* Telegram Action Button: Elevated right below cities for maximum conversion */}
+          <section className="sky-telegram" aria-label={t.telegramTitle}>
+            <a
+              className="sky-telegram-button mario-cta-btn"
+              href={CHANNEL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => sendAnalytics('telegram_click', city, 'ru', conditions?.signal)}
+            >
+              <span className="sky-telegram-icon">
+                <Send size={22} fill="currentColor" aria-hidden="true" />
+              </span>
+              <span className="sky-telegram-label">
+                <strong>🍄 ВСТУПИТЬ В ОТРЯД ОХОТНИКОВ В TELEGRAM</strong>
+                <small>Координаты просветов туч и живые выезды с гидами каждую ночь</small>
+              </span>
+              <ArrowUpRight size={22} aria-hidden="true" />
+            </a>
+          </section>
+
           <section className="sky-result mario-result-box" aria-live="polite" aria-label={t.current}>
             <div className="sky-result-meta">
               <span className="sky-pulse" aria-hidden="true" />
@@ -296,25 +316,6 @@ export default function HomePage() {
                 )}
               </div>
             )}
-          </section>
-
-          <section className="sky-telegram" aria-label={t.telegramTitle}>
-            <a
-              className="sky-telegram-button mario-cta-btn"
-              href={CHANNEL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => sendAnalytics('telegram_click', city, 'ru', conditions?.signal)}
-            >
-              <span className="sky-telegram-icon">
-                <Send size={22} fill="currentColor" aria-hidden="true" />
-              </span>
-              <span className="sky-telegram-label">
-                <strong>🍄 ВСТУПИТЬ В ОТРЯД ОХОТНИКОВ В TELEGRAM</strong>
-                <small>Координаты просветов туч и живые выезды с гидами каждую ночь</small>
-              </span>
-              <ArrowUpRight size={22} aria-hidden="true" />
-            </a>
           </section>
 
           {/* SEO & Hunter Guide Section for High Search Ranking */}
