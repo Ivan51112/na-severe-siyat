@@ -31,8 +31,6 @@ export function MarioAuroraScene({
   const [isJumping, setIsJumping] = useState(false);
   const [isBlockHit, setIsBlockHit] = useState(false);
   const [auroraScore, setAuroraScore] = useState(0);
-  const [tapCount, setTapCount] = useState(0);
-  const [isTeleporting, setIsTeleporting] = useState(false);
   const [burstActive, setBurstActive] = useState(false);
   const [floatingPoints, setFloatingPoints] = useState<{ id: number; text: string; kind: 'good' | 'warn' | 'bad' }[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -200,23 +198,7 @@ export function MarioAuroraScene({
   };
 
   const handleJump = () => {
-    if (isJumping || !marioOut || isTeleporting) return;
-
-    const nextTap = tapCount + 1;
-    setTapCount(nextTap);
-
-    // EASTER EGG: Teleport to Telegram on 15th tap!
-    if (nextTap === 15) {
-      setIsTeleporting(true);
-      play8BitSound('warp');
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate?.([60, 40, 100, 40, 200]);
-      }
-      setTimeout(() => {
-        window.location.href = 'https://t.me/na_severe_siyat';
-      }, 700);
-      return;
-    }
+    if (isJumping || !marioOut) return;
 
     setIsJumping(true);
     play8BitSound('jump');
@@ -674,20 +656,6 @@ export function MarioAuroraScene({
           <div className="ground-road-stripes" />
           <div className="ground-brick-pattern" />
         </div>
-
-        {/* SECRET TELEPORT WARP MODAL */}
-        {isTeleporting && (
-          <div className="teleport-warp-overlay">
-            <div className="teleport-modal">
-              <div className="teleport-badge">👾 SECRET WARP PIPE</div>
-              <div className="teleport-title">СЕКРЕТНЫЙ ЧИТ-КОД!</div>
-              <div className="teleport-desc">ТЕЛЕПОРТИРУЕМСЯ В КАНАЛ ОХОТНИКОВ...</div>
-              <div className="teleport-loader">
-                <div className="teleport-bar-fill" />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ACTION BUTTON: Reacts directly to current real weather */}
