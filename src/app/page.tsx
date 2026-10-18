@@ -228,6 +228,8 @@ export default function HomePage() {
           <MarioAuroraScene
             city={city}
             cloudCover={conditions?.cloudCover ?? null}
+            cloudLow={conditions?.cloudLow ?? null}
+            precipitationKind={conditions?.precipitationKind ?? 'none'}
             signal={conditions?.signal ?? null}
             auroraChance={conditions?.auroraModel ?? null}
             kpIndex={data?.solarWind?.bz !== null && data?.solarWind?.bz !== undefined ? Math.max(1, Math.min(9, Number((3.6 - data.solarWind.bz * 0.35).toFixed(1)))) : 3.8}

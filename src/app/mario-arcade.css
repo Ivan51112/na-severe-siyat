@@ -56,8 +56,14 @@
   text-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
 }
 
+.hud-val.highlight-warn {
+  color: #facc15;
+  text-shadow: 0 0 8px rgba(250, 204, 21, 0.8);
+}
+
 .hud-val.highlight-cloud {
-  color: #94a3b8;
+  color: #f87171;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.6);
 }
 
 .hud-star-icon {
@@ -154,116 +160,182 @@
   }
 }
 
-/* Blazing Mode on Win / Favorable */
-.mario-aurora-sky.aurora-mode-blazing .murmansk-heraldic-aurora {
-  filter: drop-shadow(0 0 16px rgba(250, 204, 21, 0.95)) drop-shadow(0 0 28px rgba(34, 197, 94, 0.9));
+/* =========================================================
+   REAL-TIME FORECAST SKY LOGIC
+========================================================= */
+/* 1. OVERCAST MODE (No aurora visible when overcast!) */
+.mario-game-wrapper.sky-mode-overcast .mario-stage {
+  background: linear-gradient(180deg, #050a14 0%, #0f1a2c 60%, #17243c 100%) !important;
 }
 
-.mario-aurora-sky.aurora-mode-blazing .h-ray {
+.mario-game-wrapper.sky-mode-overcast .murmansk-heraldic-aurora,
+.mario-game-wrapper.sky-mode-overcast .aurora-wave,
+.mario-game-wrapper.sky-mode-overcast .pixel-stars {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.real-overcast-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.overcast-sky-wash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 140px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(30, 41, 59, 0.95) 0%, transparent 85%);
+}
+
+.cloud-overcast-1 {
+  top: 10px;
+  left: -20px;
+  width: 280px;
+  height: 60px;
+  background: #1e293b;
+  opacity: 0.92;
+  border-radius: 60px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+  animation: cloudDriftSlow 12s infinite linear alternate;
+}
+
+.cloud-overcast-2 {
+  top: 28px;
+  left: 35%;
+  width: 320px;
+  height: 70px;
+  background: #334155;
+  opacity: 0.88;
+  border-radius: 70px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  animation: cloudDriftSlow 15s infinite linear alternate-reverse;
+}
+
+.cloud-overcast-3 {
+  top: 65px;
+  left: 10%;
+  width: 350px;
+  height: 65px;
+  background: #1e293b;
+  opacity: 0.94;
+  border-radius: 60px;
+  animation: cloudDriftSlow 10s infinite linear alternate;
+}
+
+.cloud-overcast-4 {
+  top: 15px;
+  right: -30px;
+  width: 260px;
+  height: 55px;
+  background: #1e293b;
+  opacity: 0.9;
+  border-radius: 50px;
+  animation: cloudDriftSlow 13s infinite linear alternate-reverse;
+}
+
+/* 2. PATCHY MODE (Subtle aurora breaks through gaps) */
+.mario-game-wrapper.sky-mode-patchy .murmansk-heraldic-aurora {
+  opacity: 0.45;
+  filter: blur(2px);
+}
+
+.real-patchy-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.cloud-patchy-1 {
+  top: 20px;
+  left: 8%;
+  width: 200px;
+  height: 50px;
+  background: #1e293b;
+  opacity: 0.8;
+  border-radius: 50px;
+  animation: cloudDriftSlow 14s infinite linear alternate;
+}
+
+.cloud-patchy-2 {
+  top: 45px;
+  right: 12%;
+  width: 240px;
+  height: 55px;
+  background: #334155;
+  opacity: 0.75;
+  border-radius: 50px;
+  animation: cloudDriftSlow 16s infinite linear alternate-reverse;
+}
+
+@keyframes cloudDriftSlow {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(35px); }
+}
+
+/* 3. CLEAR MODE & BURST (Radiant Heraldic Aurora) */
+.mario-aurora-sky.burst-active .murmansk-heraldic-aurora {
+  filter: drop-shadow(0 0 14px rgba(250, 204, 21, 0.8)) drop-shadow(0 0 24px rgba(16, 185, 129, 0.75));
+}
+
+.mario-aurora-sky.burst-active .h-ray {
   animation: rayBlaze 1.4s infinite ease-in-out alternate;
 }
 
 @keyframes rayBlaze {
   0% {
-    transform: scaleY(1.05) skewX(-2deg);
-    opacity: 0.95;
+    transform: scaleY(1.05) skewX(-1.5deg);
+    opacity: 0.85;
   }
   50% {
-    transform: scaleY(1.35) skewX(2deg);
+    transform: scaleY(1.28) skewX(1.5deg);
     opacity: 1;
   }
   100% {
-    transform: scaleY(1.18) skewX(-0.5deg);
-    opacity: 0.98;
+    transform: scaleY(1.15) skewX(-0.5deg);
+    opacity: 0.9;
   }
 }
 
-/* Clouded Mode on Bad Forecast */
-.mario-aurora-sky.aurora-mode-clouded .murmansk-heraldic-aurora {
-  opacity: 0.15;
-  transform: scaleY(0.4);
-}
-
+/* Soft ambient background wave curtains */
 .aurora-wave {
   position: absolute;
   top: -25px;
   left: -20%;
   width: 140%;
-  height: 150px;
+  height: 140px;
   border-radius: 50% 60% 40% 50%;
-  opacity: 0.35;
-  filter: blur(22px);
+  opacity: 0.28;
+  filter: blur(24px);
   transition: opacity 0.6s ease, filter 0.6s ease;
 }
 
 .wave-1 {
-  background: radial-gradient(ellipse at center, rgba(0, 255, 136, 0.8) 0%, rgba(16, 185, 129, 0) 70%);
+  background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.65) 0%, rgba(6, 182, 212, 0) 70%);
   animation: auroraShift1 9s infinite alternate ease-in-out;
 }
 
 .wave-2 {
-  background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.7) 0%, rgba(14, 165, 233, 0) 70%);
+  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.55) 0%, rgba(192, 38, 211, 0) 70%);
   animation: auroraShift2 13s infinite alternate ease-in-out;
 }
 
 .wave-3 {
-  background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.6) 0%, rgba(147, 51, 234, 0) 70%);
+  background: radial-gradient(ellipse at center, rgba(250, 204, 21, 0.5) 0%, rgba(244, 63, 94, 0) 70%);
   animation: auroraShift1 11s infinite alternate-reverse ease-in-out;
 }
 
-/* Sky Mode 1: BLAZING AURORA ON WIN */
-.mario-aurora-sky.aurora-mode-blazing .aurora-wave {
-  opacity: 1;
-  filter: blur(12px);
-  height: 190px;
+.mario-aurora-sky.burst-active .aurora-wave {
+  opacity: 0.7;
+  filter: blur(14px);
+  height: 180px;
 }
 
-/* Sky Mode 2: CLOUDED ON MISS */
-.mario-aurora-sky.aurora-mode-clouded .aurora-wave {
-  opacity: 0.12;
-  filter: blur(35px);
-}
-
-.cloud-storm-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  animation: cloudRollIn 0.8s ease-out forwards;
-}
-
-.storm-cloud {
-  position: absolute;
-  background: #334155;
-  border-radius: 50px;
-  opacity: 0.85;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-}
-
-.cloud-a {
-  top: 15px;
-  left: 20%;
-  width: 140px;
-  height: 45px;
-  animation: cloudFloat 4s infinite alternate ease-in-out;
-}
-
-.cloud-b {
-  top: 35px;
-  left: 48%;
-  width: 170px;
-  height: 55px;
-  animation: cloudFloat 5s infinite alternate-reverse ease-in-out;
-}
-
-.cloud-c {
-  top: 10px;
-  left: 70%;
-  width: 130px;
-  height: 40px;
-}
-
-/* Pixel Snowfall during overcast */
+/* Pixel Snowfall during overcast snow */
 .pixel-snowfall {
   position: absolute;
   inset: 0;
@@ -436,19 +508,22 @@
 .rivet-bl { bottom: 3px; left: 3px; }
 .rivet-br { bottom: 3px; right: 3px; }
 
-.block-qmark {
-  font-size: 20px;
-  color: #78350f;
-  font-weight: bold;
-  animation: qmarkBlink 1.4s infinite alternate;
+.retro-block.is-cloud-block {
+  background: #475569;
+  border-color: #1e293b;
+  box-shadow: inset 3px 3px 0 #64748b, inset -3px -3px 0 #0f172a, 0 6px 12px rgba(0, 0, 0, 0.6);
 }
 
-.retro-block.is-cloud-hit .block-qmark {
+.retro-block.is-cloud-block .block-qmark {
   color: #cbd5e1;
-  font-size: 18px;
+  font-size: 22px;
 }
 
-/* Floating scores: Good vs Bad */
+.retro-block.is-cloud-block .block-rivet {
+  background: #1e293b;
+}
+
+/* Floating scores: Good, Warn, Bad */
 .floating-score {
   position: absolute;
   top: -24px;
@@ -464,6 +539,11 @@
 .floating-score.score-good {
   color: #00ff88;
   text-shadow: 0 0 10px rgba(0, 255, 136, 0.9), 2px 2px 0 #000;
+}
+
+.floating-score.score-warn {
+  color: #fde047;
+  text-shadow: 0 0 10px rgba(253, 224, 71, 0.9), 2px 2px 0 #000;
 }
 
 .floating-score.score-bad {
@@ -842,6 +922,19 @@
   background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
   border: 3px solid #15803d;
   box-shadow: 0 6px 0 #14532d, 0 10px 20px rgba(34, 197, 94, 0.4);
+}
+
+.mario-action-btn.btn-warn {
+  background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%);
+  border: 3px solid #a16207;
+  box-shadow: 0 6px 0 #713f12, 0 10px 20px rgba(234, 179, 8, 0.4);
+}
+
+.mario-action-btn.btn-overcast {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  border: 3px solid #475569;
+  box-shadow: 0 6px 0 #0f172a, 0 8px 16px rgba(0, 0, 0, 0.5);
+  color: #cbd5e1;
 }
 
 .mario-action-btn.btn-check {

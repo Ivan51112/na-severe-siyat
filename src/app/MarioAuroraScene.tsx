@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { CityId } from '@/lib/conditions';
+import { CityId, CITIES } from '@/lib/conditions';
 
 interface MarioAuroraSceneProps {
   city: CityId;
   cloudCover: number | null;
+  cloudLow?: number | null;
+  precipitationKind?: 'none' | 'rain' | 'snow' | 'unknown' | null;
   signal: 'green' | 'yellow' | 'red' | 'unknown' | null;
   auroraChance: number | null;
   kpIndex: number | null;
@@ -15,6 +17,8 @@ interface MarioAuroraSceneProps {
 export function MarioAuroraScene({
   city,
   cloudCover,
+  cloudLow,
+  precipitationKind,
   signal,
   auroraChance,
   kpIndex,
@@ -27,13 +31,33 @@ export function MarioAuroraScene({
   const [isJumping, setIsJumping] = useState(false);
   const [isBlockHit, setIsBlockHit] = useState(false);
   const [auroraScore, setAuroraScore] = useState(0);
-  const [auroraState, setAuroraState] = useState<'idle' | 'blazing' | 'clouded'>('idle');
-  const [floatingPoints, setFloatingPoints] = useState<{ id: number; text: string; kind: 'good' | 'bad' }[]>([]);
+  const [burstActive, setBurstActive] = useState(false);
+  const [floatingPoints, setFloatingPoints] = useState<{ id: number; text: string; kind: 'good' | 'warn' | 'bad' }[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [skierPos, setSkierPos] = useState({ x: 15, y: 15 });
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  const isFavorable = signal === 'green' || (cloudCover !== null && cloudCover < 50);
+  // REAL WEATHER EVALUATION:
+  // Overcast: dense clouds, high cloud cover, or precipitation
+  const isOvercast =
+    (cloudCover !== null && cloudCover >= 65) ||
+    (cloudLow !== null && cloudLow !== undefined && cloudLow >= 75) ||
+    precipitationKind === 'snow' ||
+    precipitationKind === 'rain' ||
+    signal === 'red';
+
+  // Patchy: cloud breaks, changing visibility
+  const isPatchy =
+    !isOvercast &&
+    ((cloudCover !== null && cloudCover >= 22) ||
+      (cloudLow !== null && cloudLow !== undefined && cloudLow >= 30) ||
+      signal === 'yellow');
+
+  // Clear: starry sky with direct view
+  const isClearSky = !isOvercast && !isPatchy;
+
+  // Sky visibility mode
+  const currentSkyMode = isOvercast ? 'overcast' : isPatchy ? 'patchy' : 'clear';
 
   // Load saved score
   useEffect(() => {
@@ -47,7 +71,7 @@ export function MarioAuroraScene({
   useEffect(() => {
     setBusState('driving_in');
     setMarioOut(false);
-    setAuroraState('idle');
+    setBurstActive(false);
 
     // 1. Bus parks after 1.0s
     const t1 = setTimeout(() => {
@@ -78,7 +102,7 @@ export function MarioAuroraScene({
   }, [city]);
 
   // Web Audio 8-bit sound generator
-  const play8BitSound = (type: 'jump' | 'hit_win' | 'hit_miss' | 'bus') => {
+  const play8BitSound = (type: 'jump' | 'hit_win' | 'hit_patchy' | 'hit_miss') => {
     if (!soundEnabled || typeof window === 'undefined') return;
     try {
       const AudioCtx =
@@ -108,7 +132,7 @@ export function MarioAuroraScene({
         osc.start(now);
         osc.stop(now + 0.16);
       } else if (type === 'hit_win') {
-        // Classic triumphant coin & powerup chord
+        // Triumphant multi-harmonic chord (violet, emerald, gold)
         osc.type = 'square';
         osc.frequency.setValueAtTime(987.77, now);
         osc.frequency.setValueAtTime(1318.51, now + 0.08);
@@ -119,33 +143,43 @@ export function MarioAuroraScene({
         osc.start(now);
         osc.stop(now + 0.35);
 
-        // Aurora sparkle arpeggio
-        [659.25, 783.99, 1046.5, 1318.5].forEach((freq, idx) => {
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
           const chordOsc = ctx.createOscillator();
           const chordGain = ctx.createGain();
           chordOsc.type = 'triangle';
-          chordOsc.frequency.setValueAtTime(freq, now + 0.1 + idx * 0.07);
-          chordGain.gain.setValueAtTime(0.08, now + 0.1 + idx * 0.07);
-          chordGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6 + idx * 0.07);
+          chordOsc.frequency.setValueAtTime(freq, now + 0.1 + idx * 0.06);
+          chordGain.gain.setValueAtTime(0.07, now + 0.1 + idx * 0.06);
+          chordGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6 + idx * 0.06);
           chordOsc.connect(chordGain);
           chordGain.connect(ctx.destination);
-          chordOsc.start(now + 0.1 + idx * 0.07);
-          chordOsc.stop(now + 0.6 + idx * 0.07);
+          chordOsc.start(now + 0.1 + idx * 0.06);
+          chordOsc.stop(now + 0.6 + idx * 0.06);
         });
-      } else if (type === 'hit_miss') {
-        // Funny 8-bit miss buzz (descending sad trombone)
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(260, now);
-        osc.frequency.linearRampToValueAtTime(130, now + 0.3);
-        gain.gain.setValueAtTime(0.09, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+      } else if (type === 'hit_patchy') {
+        // Gentle double-chime for breaks in clouds
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, now);
+        osc.frequency.setValueAtTime(880.0, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.32);
+        osc.stop(now + 0.35);
+      } else if (type === 'hit_miss') {
+        // Soft cloud muff sound (descending noise buzz)
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+        gain.gain.setValueAtTime(0.07, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.28);
       }
     } catch {
-      // Audio not permitted by browser
+      // Audio policy restricted
     }
   };
 
@@ -155,18 +189,19 @@ export function MarioAuroraScene({
     setIsJumping(true);
     play8BitSound('jump');
 
-    // Haptic feedback
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate?.([25, 30, 45]);
     }
 
-    // Hit the block at apex of jump
     setTimeout(() => {
       setIsBlockHit(true);
 
-      if (isFavorable) {
-        // SUCCESS: Aurora lights up bright!
-        setAuroraState('blazing');
+      const pointId = Date.now();
+      const currentCityName = CITIES[city].nameRu;
+
+      if (isClearSky) {
+        // CLEAR SKY: Full Aurora victory!
+        setBurstActive(true);
         play8BitSound('hit_win');
 
         const nextScore = auroraScore + 1;
@@ -175,38 +210,53 @@ export function MarioAuroraScene({
           localStorage.setItem('aurora_mario_score', nextScore.toString());
         }
 
-        const pointId = Date.now();
-        const winPhrases = ['🌟 СИЯЕТ!', '🔥 КУШ!', '✨ ДЖЕКПОТ!', '🚀 ВЫЕЗЖАЕМ!'];
+        const winPhrases = [
+          '✨ 100% СИЯЕТ!',
+          '🌟 ЧИСТОЕ НЕБО!',
+          '🔥 КУШ В ' + currentCityName.toUpperCase() + '!',
+          '🚀 ВЫЕЗЖАЕМ!',
+        ];
         const chosen = winPhrases[nextScore % winPhrases.length];
         setFloatingPoints((prev) => [...prev, { id: pointId, text: chosen, kind: 'good' }]);
+      } else if (isPatchy) {
+        // PATCHY SKY: Breaks in clouds
+        setBurstActive(true);
+        play8BitSound('hit_patchy');
 
-        setTimeout(() => {
-          setFloatingPoints((prev) => prev.filter((p) => p.id !== pointId));
-        }, 1200);
+        const patchyPhrases = [
+          '🌤️ ПРОСВЕТЫ В ТУЧАХ!',
+          '🔍 ЛОВИ В РАЗРЫВАХ!',
+          '⚡ ЕСТЬ ОКНО!',
+        ];
+        const chosen = patchyPhrases[Math.floor(Math.random() * patchyPhrases.length)];
+        setFloatingPoints((prev) => [...prev, { id: pointId, text: chosen, kind: 'warn' }]);
       } else {
-        // CLOUDY / BAD FORECAST: Aurora dimmed behind clouds!
-        setAuroraState('clouded');
+        // OVERCAST SKY: Clouds block aurora completely
+        setBurstActive(false);
         play8BitSound('hit_miss');
 
-        const pointId = Date.now();
-        const missPhrases = ['☁️ ТУЧИ!', '🌫️ ПЕРЕЖДЕМ!', '❄️ СНЕГОПАД!', '🔍 ИЩИ ПРОСВЕТ'];
+        const cloudsVal = cloudCover !== null ? Math.round(cloudCover) : 95;
+        const missPhrases = [
+          `☁️ ТУЧИ ${cloudsVal}%!`,
+          '🌫️ НЕБО ЗАКРЫТО!',
+          '❄️ СИЯНИЯ НЕ ВИДНО',
+          '🚗 ИЩИ ПРОСВЕТЫ!',
+        ];
         const chosen = missPhrases[Math.floor(Math.random() * missPhrases.length)];
         setFloatingPoints((prev) => [...prev, { id: pointId, text: chosen, kind: 'bad' }]);
-
-        setTimeout(() => {
-          setFloatingPoints((prev) => prev.filter((p) => p.id !== pointId));
-        }, 1200);
       }
+
+      setTimeout(() => {
+        setFloatingPoints((prev) => prev.filter((p) => p.id !== pointId));
+      }, 1300);
 
       if (onHit) onHit();
 
-      // Reset block bounce
       setTimeout(() => {
         setIsBlockHit(false);
       }, 180);
     }, 250);
 
-    // Land back
     setTimeout(() => {
       setIsJumping(false);
     }, 550);
@@ -226,7 +276,7 @@ export function MarioAuroraScene({
   }, [city]);
 
   return (
-    <div className={`mario-game-wrapper world-${city}`}>
+    <div className={`mario-game-wrapper world-${city} sky-mode-${currentSkyMode}`}>
       {/* 8-bit ARCADE HUD BAR */}
       <div className="mario-hud">
         <div className="hud-item hud-hunter">
@@ -246,9 +296,13 @@ export function MarioAuroraScene({
           </span>
         </div>
         <div className="hud-item hud-kp">
-          <span className="hud-label">ПРОГНОЗ</span>
-          <span className={`hud-val ${isFavorable ? 'highlight-win' : 'highlight-cloud'}`}>
-            {isFavorable ? '🟢 СИЯЕТ' : '☁️ ТУЧИ'}
+          <span className="hud-label">ВИДИМОСТЬ</span>
+          <span
+            className={`hud-val ${
+              isClearSky ? 'highlight-win' : isPatchy ? 'highlight-warn' : 'highlight-cloud'
+            }`}
+          >
+            {isClearSky ? '🟢 СИЯЕТ' : isPatchy ? '🟡 ПРОСВЕТЫ' : '🔴 ТУЧИ'}
           </span>
         </div>
         <button
@@ -269,51 +323,80 @@ export function MarioAuroraScene({
         tabIndex={0}
         aria-label="Прыгнуть и выбить прогноз сияния"
       >
-        {/* DYNAMIC AURORA SKY: Reacts to forecast! */}
-        <div className={`mario-aurora-sky aurora-mode-${auroraState}`}>
-          {/* MURMANSK COAT OF ARMS HERALDIC AURORA RAYS */}
-          <div className="murmansk-heraldic-aurora">
-            <svg viewBox="0 0 360 110" className="heraldic-aurora-svg" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="murmanskGoldGreen" x1="0%" y1="100%" x2="0%" y2="0%">
-                  <stop offset="0%" stopColor="#eab308" stopOpacity="0.15" />
-                  <stop offset="35%" stopColor="#fde047" stopOpacity="0.85" />
-                  <stop offset="70%" stopColor="#22c55e" stopOpacity="0.95" />
-                  <stop offset="100%" stopColor="#4ade80" stopOpacity="0.2" />
-                </linearGradient>
-                <filter id="heraldicGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="2.5" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
-              <g className="heraldic-rays" filter="url(#heraldicGlow)">
-                {/* 10 radiating rays in Murmansk coat of arms geometry */}
-                <polygon points="35,110 42,110 48,45 28,45" className="h-ray ray-1" fill="url(#murmanskGoldGreen)" />
-                <polygon points="62,110 70,110 78,32 54,32" className="h-ray ray-2" fill="url(#murmanskGoldGreen)" />
-                <polygon points="92,110 100,110 110,20 82,20" className="h-ray ray-3" fill="url(#murmanskGoldGreen)" />
-                <polygon points="122,110 130,110 144,10 114,10" className="h-ray ray-4" fill="url(#murmanskGoldGreen)" />
-                <polygon points="152,110 162,110 178,3 146,3" className="h-ray ray-5" fill="url(#murmanskGoldGreen)" />
-                <polygon points="186,110 196,110 214,3 182,3" className="h-ray ray-6" fill="url(#murmanskGoldGreen)" />
-                <polygon points="218,110 226,110 246,10 216,10" className="h-ray ray-7" fill="url(#murmanskGoldGreen)" />
-                <polygon points="248,110 256,110 274,20 246,20" className="h-ray ray-8" fill="url(#murmanskGoldGreen)" />
-                <polygon points="278,110 286,110 302,32 278,32" className="h-ray ray-9" fill="url(#murmanskGoldGreen)" />
-                <polygon points="306,110 314,110 326,45 306,45" className="h-ray ray-10" fill="url(#murmanskGoldGreen)" />
-              </g>
-            </svg>
-          </div>
+        {/* DYNAMIC SKY CANVAS: 100% FAITHFUL TO REAL FORECAST */}
+        <div className={`mario-aurora-sky sky-render-${currentSkyMode} ${burstActive ? 'burst-active' : ''}`}>
+          
+          {/* 1. HERALDIC MURMANSK COAT-OF-ARMS AURORA RAYS (Visible only in clear/patchy sky!) */}
+          {!isOvercast && (
+            <div className="murmansk-heraldic-aurora">
+              <svg viewBox="0 0 360 115" className="heraldic-aurora-svg" preserveAspectRatio="none">
+                <defs>
+                  {/* REALISTIC MULTI-COLOR GRADIENT: Violet -> Magenta -> Cyan -> Emerald -> Gold -> Ruby */}
+                  <linearGradient id="murmanskMultiColorRay" x1="0%" y1="100%" x2="0%" y2="0%">
+                    {/* Bottom fringe: mysterious violet & magenta */}
+                    <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.05" />
+                    <stop offset="15%" stopColor="#c026d3" stopOpacity="0.45" />
+                    {/* Lower beam: cool cyan */}
+                    <stop offset="35%" stopColor="#06b6d4" stopOpacity="0.6" />
+                    {/* Main pillar: authentic emerald green & golden heart */}
+                    <stop offset="55%" stopColor="#10b981" stopOpacity="0.75" />
+                    <stop offset="72%" stopColor="#fde047" stopOpacity="0.8" />
+                    {/* High altitude tips: soft ruby & amethyst */}
+                    <stop offset="90%" stopColor="#f43f5e" stopOpacity="0.55" />
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.05" />
+                  </linearGradient>
 
-          <div className="aurora-wave wave-1" />
-          <div className="aurora-wave wave-2" />
-          <div className="aurora-wave wave-3" />
-          <div className="pixel-stars" />
+                  <filter id="softAuroraGlow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                </defs>
 
-          {/* If clouds cover the sky on bad forecast hit */}
-          {auroraState === 'clouded' && (
-            <div className="cloud-storm-overlay">
-              <div className="storm-cloud cloud-a" />
-              <div className="storm-cloud cloud-b" />
-              <div className="storm-cloud cloud-c" />
-              <div className="pixel-snowfall" />
+                <g className="heraldic-rays" filter="url(#softAuroraGlow)">
+                  {/* Stylized Murmansk coat of arms geometry */}
+                  <polygon points="35,115 42,115 48,50 28,50" className="h-ray ray-1" fill="url(#murmanskMultiColorRay)" />
+                  <polygon points="62,115 70,115 78,36 54,36" className="h-ray ray-2" fill="url(#murmanskMultiColorRay)" />
+                  <polygon points="92,115 100,115 110,24 82,24" className="h-ray ray-3" fill="url(#murmanskMultiColorRay)" />
+                  <polygon points="122,115 130,115 144,14 114,14" className="h-ray ray-4" fill="url(#murmanskMultiColorRay)" />
+                  <polygon points="152,115 162,115 178,5 146,5" className="h-ray ray-5" fill="url(#murmanskMultiColorRay)" />
+                  <polygon points="186,115 196,115 214,5 182,5" className="h-ray ray-6" fill="url(#murmanskMultiColorRay)" />
+                  <polygon points="218,115 226,115 246,14 216,14" className="h-ray ray-7" fill="url(#murmanskMultiColorRay)" />
+                  <polygon points="248,115 256,115 274,24 246,24" className="h-ray ray-8" fill="url(#murmanskMultiColorRay)" />
+                  <polygon points="278,115 286,115 302,36 278,36" className="h-ray ray-9" fill="url(#murmanskMultiColorRay)" />
+                  <polygon points="306,115 314,115 326,50 306,50" className="h-ray ray-10" fill="url(#murmanskMultiColorRay)" />
+                </g>
+              </svg>
+            </div>
+          )}
+
+          {/* 2. Soft Ambient Waves with Violet & Turquoise tints */}
+          {!isOvercast && (
+            <>
+              <div className="aurora-wave wave-1" />
+              <div className="aurora-wave wave-2" />
+              <div className="aurora-wave wave-3" />
+            </>
+          )}
+
+          {/* 3. Starry night: crisp twinkling stars in clear sky */}
+          {!isOvercast && <div className="pixel-stars" />}
+
+          {/* 4. REAL CLOUDS OVERLAY: Shown when overcast or patchy */}
+          {isOvercast && (
+            <div className="real-overcast-overlay">
+              <div className="overcast-sky-wash" />
+              <div className="storm-cloud cloud-overcast-1" />
+              <div className="storm-cloud cloud-overcast-2" />
+              <div className="storm-cloud cloud-overcast-3" />
+              <div className="storm-cloud cloud-overcast-4" />
+              {precipitationKind === 'snow' && <div className="pixel-snowfall" />}
+            </div>
+          )}
+
+          {isPatchy && (
+            <div className="real-patchy-overlay">
+              <div className="storm-cloud cloud-patchy-1" />
+              <div className="storm-cloud cloud-patchy-2" />
             </div>
           )}
         </div>
@@ -329,7 +412,6 @@ export function MarioAuroraScene({
             </div>
             <div className="ocean-layer ocean-back" />
 
-            {/* Breaching Whale */}
             <div className="whale-actor">
               <svg viewBox="0 0 160 100" className="whale-svg" aria-label="Кит в Баренцевом море">
                 <path
@@ -362,7 +444,6 @@ export function MarioAuroraScene({
           <div className="bg-anim bg-murmansk">
             <div className="murmansk-hills" />
 
-            {/* Icebreaker Lenin */}
             <div className="icebreaker-lenin">
               <svg viewBox="0 0 240 90" className="lenin-svg" aria-label="Атомный ледокол Ленин">
                 <path d="M10,50 L45,72 L210,72 L235,55 L215,50 Z" fill="#1e1e24" />
@@ -388,42 +469,30 @@ export function MarioAuroraScene({
               </div>
             </div>
 
-            {/* UPGRADED: High-Detail Recognizable Polar Bear standing on an ice floe */}
             <div className="polar-bear-floe">
               <div className="ice-floe" />
               <svg viewBox="0 0 74 65" className="bear-svg" aria-label="Белый северный медведь в ушанке машет лапой">
-                {/* Bear Thick Body with shaded fur */}
                 <ellipse cx="36" cy="42" rx="19" ry="14" fill="#f1f5f9" />
                 <ellipse cx="34" cy="40" rx="17" ry="12" fill="#ffffff" />
-                {/* Hind legs */}
                 <rect x="18" y="48" width="10" height="9" rx="4" fill="#e2e8f0" />
                 <rect x="42" y="48" width="10" height="9" rx="4" fill="#e2e8f0" />
-
-                {/* Bear Head */}
                 <circle cx="48" cy="25" r="12" fill="#ffffff" />
-                {/* Snout with black nose */}
                 <ellipse cx="58" cy="27" rx="6.5" ry="4.5" fill="#f8fafc" />
                 <ellipse cx="62" cy="26" rx="2.5" ry="2" fill="#0f172a" />
-                {/* Cute black eye */}
                 <circle cx="50" cy="22" r="2" fill="#0f172a" />
                 <circle cx="50.6" cy="21.4" r="0.7" fill="#ffffff" />
-                {/* Bear Ears */}
                 <circle cx="39" cy="15" r="3.5" fill="#ffffff" />
                 <circle cx="39" cy="15" r="2" fill="#fca5a5" />
 
-                {/* Big Fluffy Waving Paw */}
                 <g className="bear-waving-arm">
                   <path d="M46,35 C56,26 64,16 60,12 C55,10 49,20 44,28 Z" fill="#ffffff" />
-                  {/* Black claws / paw pads */}
                   <circle cx="60" cy="12" r="1.5" fill="#334155" />
                   <circle cx="57" cy="11" r="1.5" fill="#334155" />
                 </g>
 
-                {/* Red Russian Ushanka Hat with badge */}
                 <path d="M38,16 C38,9 57,9 57,16 Z" fill="#dc2626" />
                 <rect x="36" y="15" width="23" height="4" fill="#991b1b" rx="1" />
                 <circle cx="47" cy="13" r="2.5" fill="#facc15" />
-                {/* Ear flaps hanging */}
                 <rect x="38" y="18" width="4" height="8" fill="#dc2626" rx="1" />
                 <rect x="52" y="18" width="4" height="8" fill="#dc2626" rx="1" />
               </svg>
@@ -431,23 +500,19 @@ export function MarioAuroraScene({
           </div>
         )}
 
-        {/* 3. KIROVSK: UPGRADED High-Detail Khibiny Mountain Peaks with Snow & Skier */}
+        {/* 3. KIROVSK: Brilliant White Snowy Khibiny Peaks + Skier */}
         {city === 'kirovsk' && (
           <div className="bg-anim bg-kirovsk">
-            {/* Multi-layered snowy mountain ridge */}
             <div className="khibiny-range-back" />
             <div className="khibiny-range-front">
-              {/* Pine trees along mountain base */}
               <div className="mountain-pines" />
             </div>
 
-            {/* Big Wood Ski Lift */}
             <div className="ski-lift-cable">
               <div className="ski-cabin cabin-1" />
               <div className="ski-cabin cabin-2" />
             </div>
 
-            {/* Skier carving down slope */}
             <div
               className="skier-actor"
               style={{
@@ -469,14 +534,14 @@ export function MarioAuroraScene({
           </div>
         )}
 
-        {/* FLOATING RETRO QUESTION BLOCK [ ? ] */}
+        {/* FLOATING QUESTION BLOCK: Question mark when clear, cloud when overcast */}
         <div className={`mario-block-container ${isBlockHit ? 'is-bumped' : ''}`}>
-          <div className={`retro-block question-block ${auroraState === 'clouded' ? 'is-cloud-hit' : ''}`}>
+          <div className={`retro-block question-block ${isOvercast ? 'is-cloud-block' : ''}`}>
             <span className="block-rivet rivet-tl" />
             <span className="block-rivet rivet-tr" />
             <span className="block-rivet rivet-bl" />
             <span className="block-rivet rivet-br" />
-            <span className="block-qmark">{auroraState === 'clouded' ? '☁' : '?'}</span>
+            <span className="block-qmark">{isOvercast ? '☁' : isPatchy ? '?' : '?'}</span>
           </div>
 
           {/* Floating Points / Badges */}
@@ -487,11 +552,10 @@ export function MarioAuroraScene({
           ))}
         </div>
 
-        {/* TOURIST BUS: MERCEDES SPRINTER (CLEAN WHITE, NO POLICE STRIPE, NO LUGGAGE) */}
+        {/* TOURIST BUS: CLEAN WHITE MERCEDES SPRINTER */}
         {busState !== 'gone' && (
           <div className={`tourist-sprinter ${busState}`}>
             <svg viewBox="0 0 160 80" className="sprinter-svg" aria-label="Туристический микроавтобус Mercedes Sprinter">
-              {/* Front Headlights Beam illuminating tundra */}
               <polygon points="150,56 220,40 220,75 150,66" fill="url(#sprinterLightGlow)" opacity="0.6" />
               <defs>
                 <linearGradient id="sprinterLightGlow" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -500,7 +564,6 @@ export function MarioAuroraScene({
                 </linearGradient>
               </defs>
 
-              {/* Clean Luxury White Sprinter Body */}
               <path
                 d="M10,22 L112,22 C122,22 136,30 143,42 L152,48 C155,50 155,54 155,60 L152,66 L10,66 C8,66 6,64 6,60 L6,26 C6,23 8,22 10,22 Z"
                 fill="#ffffff"
@@ -508,36 +571,30 @@ export function MarioAuroraScene({
                 strokeWidth="2.5"
               />
 
-              {/* Tinted Panoramic Windows */}
               <rect x="16" y="27" width="22" height="15" fill="#0f172a" rx="2" />
               <rect x="42" y="27" width="22" height="15" fill="#0f172a" rx="2" />
               <rect x="68" y="27" width="22" height="15" fill="#0f172a" rx="2" />
               <path d="M94,27 L114,27 C122,27 132,35 136,42 L94,42 Z" fill="#0f172a" />
 
-              {/* Mercedes Front Grille & Chrome Star */}
               <rect x="146" y="52" width="7" height="9" fill="#1e293b" rx="1.5" />
               <circle cx="149.5" cy="56.5" r="3" fill="#cbd5e1" />
               <line x1="149.5" y1="53.5" x2="149.5" y2="59.5" stroke="#0f172a" strokeWidth="0.8" />
               <line x1="147" y1="58" x2="152" y2="55" stroke="#0f172a" strokeWidth="0.8" />
 
-              {/* Headlight */}
               <rect x="148" y="49" width="5" height="3.5" fill="#fef08a" rx="1" />
 
-              {/* Back Wheel with HIGHLY VISIBLE rotating contrast spokes */}
+              {/* Rotating wheels */}
               <g className={`wheel-unit ${busState.includes('driving') ? 'is-spinning' : ''}`}>
                 <circle cx="34" cy="66" r="11" fill="#0f172a" />
                 <circle cx="34" cy="66" r="7.5" fill="#334155" />
-                {/* 4-spoke bright yellow/white star */}
                 <line x1="34" y1="58.5" x2="34" y2="73.5" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
                 <line x1="26.5" y1="66" x2="41.5" y2="66" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
                 <circle cx="34" cy="66" r="3" fill="#ffffff" />
               </g>
 
-              {/* Front Wheel with HIGHLY VISIBLE rotating contrast spokes */}
               <g className={`wheel-unit ${busState.includes('driving') ? 'is-spinning' : ''}`}>
                 <circle cx="124" cy="66" r="11" fill="#0f172a" />
                 <circle cx="124" cy="66" r="7.5" fill="#334155" />
-                {/* 4-spoke bright yellow/white star */}
                 <line x1="124" y1="58.5" x2="124" y2="73.5" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
                 <line x1="116.5" y1="66" x2="131.5" y2="66" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
                 <circle cx="124" cy="66" r="3" fill="#ffffff" />
@@ -546,7 +603,7 @@ export function MarioAuroraScene({
           </div>
         )}
 
-        {/* MARIO ARCTIC HUNTER: Steps out of Sprinter & Jumps */}
+        {/* MARIO ARCTIC HUNTER */}
         <div
           className={`mario-character ${isJumping ? 'is-jumping' : ''} ${
             marioOut ? 'is-outside-bus' : 'is-inside-bus'
@@ -579,7 +636,7 @@ export function MarioAuroraScene({
           </svg>
         </div>
 
-        {/* 8-bit PIXEL GROUND BLOCKS */}
+        {/* 8-bit GROUND */}
         <div className="mario-ground">
           <div className="ground-snow-cap" />
           <div className="ground-road-stripes" />
@@ -587,20 +644,22 @@ export function MarioAuroraScene({
         </div>
       </div>
 
-      {/* INTERACTIVE TAP BUTTON */}
+      {/* ACTION BUTTON: Reacts directly to current real weather */}
       <div className="mario-controls">
         <button
           type="button"
-          className={`mario-action-btn ${isFavorable ? 'btn-favorable' : 'btn-check'}`}
+          className={`mario-action-btn ${
+            isClearSky ? 'btn-favorable' : isPatchy ? 'btn-warn' : 'btn-overcast'
+          }`}
           onClick={handleJump}
         >
-          <span className="btn-icon">🍄</span>
+          <span className="btn-icon">{isClearSky ? '🍄' : isPatchy ? '🌤️' : '☁️'}</span>
           <span className="btn-text">
-            {auroraState === 'blazing'
-              ? '✨ СИЯНИЕ ВЫБИТО! ЖМИ ЕЩЁ!'
-              : auroraState === 'clouded'
-              ? '☁️ ТУЧИ! ПОПРОБУЙ ВЫБИТЬ СНОВА'
-              : 'ВЫБИТЬ СИЯНИЕ ИЗ БЛОКА!'}
+            {isClearSky
+              ? '✨ ВЫБИТЬ СИЯНИЕ ИЗ БЛОКА!'
+              : isPatchy
+              ? '🌤️ ВЫБИТЬ ПРОСВЕТ В ТУЧАХ!'
+              : `☁️ ОБЛАЧНО (${cloudCover !== null ? Math.round(cloudCover) : 95}%) — СИЯНИЕ СКРЫТО`}
           </span>
           <span className="btn-hint">(ЖМИ НА КНОПКУ ИЛИ ЭКРАН)</span>
         </button>
