@@ -2,8 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './aurora.css';
 import './redesign.css';
+import './mario-arcade.css';
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://aurora-polaris.ru';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://na-severe-siyat.ru';
 
 export const viewport: Viewport = {
   width: 'device-width',

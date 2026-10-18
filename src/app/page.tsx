@@ -6,6 +6,7 @@ import { ArrowUpRight, ChevronDown, Compass, MapPin, Send, Sparkles } from 'luci
 import { CITIES, CityConditions, CityId, LiveConditions } from '@/lib/conditions';
 import { selectVisualScene } from '@/lib/visual-scene';
 import { sendAnalytics } from '@/lib/client-analytics';
+import { MarioAuroraScene } from './MarioAuroraScene';
 
 type Language = 'ru' | 'zh';
 type DemoScene = 'aurora' | 'day' | 'clouds' | 'snow' | null;
@@ -192,8 +193,8 @@ export default function HomePage() {
   ];
 
   return (
-    <main className={'sky-page sky-page--' + visual.weather + (visual.night ? ' sky-page--night' : '')}>
-      <div className="sky-backdrop" style={{ backgroundImage: 'url(' + visual.src + ')' }} aria-hidden="true" />
+    <main className={'sky-page sky-page--mario'}>
+      <div className="sky-backdrop sky-backdrop--cosmic" aria-hidden="true" />
       <div className="sky-shade" aria-hidden="true" />
       <div className="sky-shell">
         <header className="sky-header">
@@ -217,10 +218,23 @@ export default function HomePage() {
 
         <div className="sky-main">
           {demoScene && <div className="sky-demo-badge">{t.demo}</div>}
-          <p className="sky-eyebrow">{t.eyebrow}</p>
-          <h1 className="sky-landing-title">{t.title}</h1>
+          <p className="sky-eyebrow">🎮 ИНТЕРАКТИВНАЯ ОХОТА ЗА СИЯНИЕМ · КОЛЬСКИЙ ПОЛУОСТРОВ</p>
+          <h1 className="sky-landing-title">Выбей северное сияние! 🌟</h1>
+          <p className="sky-lead-text">
+            Прыгай, выбивай сияние из блока, переключай локации и смотри живой погодный радар!
+          </p>
 
-          <nav className="sky-cities" aria-label="Выбрать место">
+          {/* Interactive 8-bit Mario Scene */}
+          <MarioAuroraScene
+            city={city}
+            cloudCover={conditions?.cloudCover ?? null}
+            signal={conditions?.signal ?? null}
+            auroraChance={conditions?.auroraModel ?? null}
+            kpIndex={data?.solarWind?.bz !== null && data?.solarWind?.bz !== undefined ? Math.max(1, Math.min(9, Number((3.6 - data.solarWind.bz * 0.35).toFixed(1)))) : 3.8}
+            onHit={() => sendAnalytics('mario_hit', city, 'ru', conditions?.signal)}
+          />
+
+          <nav className="sky-cities mario-city-nav" aria-label="Выбрать место">
             {CITY_IDS.map((id) => (
               <button
                 key={id}
@@ -237,16 +251,18 @@ export default function HomePage() {
                   setCity(id);
                 }}
               >
-                <MapPin size={16} aria-hidden="true" />
-                {CITIES[id].nameRu}
+                <span className="city-icon" aria-hidden="true">
+                  {id === 'murmansk' ? '⚓' : id === 'teriberka' ? '🐋' : '⛷️'}
+                </span>
+                <span>{CITIES[id].nameRu}</span>
               </button>
             ))}
           </nav>
 
-          <section className="sky-result" aria-live="polite" aria-label={t.current}>
+          <section className="sky-result mario-result-box" aria-live="polite" aria-label={t.current}>
             <div className="sky-result-meta">
               <span className="sky-pulse" aria-hidden="true" />
-              {t.current}
+              РАДАР ПОГОДЫ И НЕБА
             </div>
             <h2>{statusTitle}</h2>
             {statusBody && <p>{statusBody}</p>}
@@ -282,20 +298,20 @@ export default function HomePage() {
 
           <section className="sky-telegram" aria-label={t.telegramTitle}>
             <a
-              className="sky-telegram-button"
+              className="sky-telegram-button mario-cta-btn"
               href={CHANNEL_URL}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => sendAnalytics('telegram_click', city, 'ru', conditions?.signal)}
             >
               <span className="sky-telegram-icon">
-                <Send size={20} fill="currentColor" aria-hidden="true" />
+                <Send size={22} fill="currentColor" aria-hidden="true" />
               </span>
               <span className="sky-telegram-label">
-                {t.telegramButton}
-                <small>{t.telegramSubtitle}</small>
+                <strong>🍄 ВСТУПИТЬ В ОТРЯД ОХОТНИКОВ В TELEGRAM</strong>
+                <small>Координаты просветов туч и живые выезды с гидами каждую ночь</small>
               </span>
-              <ArrowUpRight size={20} aria-hidden="true" />
+              <ArrowUpRight size={22} aria-hidden="true" />
             </a>
           </section>
 

@@ -1,6 +1,6 @@
 export type AnalyticsEventType =
   | 'page_view' | 'city_change' | 'telegram_click' | 'forecast_view'
-  | 'sighting_yes' | 'sighting_no' | 'photo_click';
+  | 'sighting_yes' | 'sighting_no' | 'photo_click' | 'mario_hit';
 
 export interface AnalyticsEvent {
   id: string;
