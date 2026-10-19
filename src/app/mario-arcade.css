@@ -1686,4 +1686,391 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
+/* =========================================================
+   SITE-HUB STYLES (THE ULTIMATE NORTHERN LIGHTS HUB)
+========================================================= */
+.sky-hub-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 18px;
+  width: 100%;
+}
+
+.hub-card {
+  background: rgba(9, 19, 34, 0.85);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  border-radius: 18px;
+  padding: 22px 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.5), transparent);
+}
+
+.hub-section-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #38bdf8;
+  margin-bottom: 8px;
+}
+
+.hub-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.35;
+  margin: 0 0 8px 0;
+}
+
+.hub-subtitle {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #94a3b8;
+  margin: 0 0 18px 0;
+}
+
+/* LIVE PULSE SECTION */
+.hub-badge-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 20px;
+  color: #34d399;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseLiveDot 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseLiveDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.4; }
+}
+
+.hub-pulse-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pulse-zone-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 14px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
+}
+
+.pulse-zone-box.is-highlight {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.pulse-zone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.zone-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.zone-status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.zone-status-badge.status-green {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.zone-status-badge.status-yellow {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.zone-status-badge.status-blue {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.pulse-zone-detail strong {
+  display: block;
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-bottom: 3px;
+}
+
+.pulse-zone-detail span {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+/* 3 PATHS COMPARISON */
+.comparison-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.comp-item {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.comp-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.comp-free .comp-badge {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.comp-cameras .comp-badge {
+  background: rgba(14, 165, 233, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.4);
+}
+
+.comp-tours .comp-badge {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.comp-item h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 10px 0;
+}
+
+.comp-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.comp-list li {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #cbd5e1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.c-plus {
+  color: #34d399;
+  font-weight: bold;
+}
+
+.c-minus {
+  color: #f87171;
+  font-weight: bold;
+}
+
+.comp-verdict {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #94a3b8;
+  padding-top: 8px;
+  border-top: 1px solid rgba(51, 65, 85, 0.4);
+}
+
+.comp-verdict strong {
+  color: #f1f5f9;
+}
+
+/* 5 FATAL MISTAKES */
+.mistakes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mistake-card {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(51, 65, 85, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px;
+  position: relative;
+  padding-left: 54px;
+}
+
+.mistake-num {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  font-size: 16px;
+  font-weight: 900;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mistake-card h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0 0 4px 0;
+}
+
+.mistake-card p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.mistake-card strong {
+  color: #e2e8f0;
+}
+
+/* MUSEUM TELEGRAM BRIDGE */
+.hub-museum-card {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border: 1.5px solid rgba(168, 85, 247, 0.4) !important;
+}
+
+.museum-glow-ornament {
+  font-size: 20px;
+  text-align: center;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.8));
+}
+
+.museum-title {
+  font-size: 19px;
+  font-weight: 800;
+  text-align: center;
+  color: #fdf4ff;
+  margin: 0 0 8px 0;
+}
+
+.museum-desc {
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: center;
+  color: #d8b4fe;
+  margin: 0 0 18px 0;
+}
+
+.museum-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.museum-feat-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(88, 28, 135, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.feat-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.museum-feat-item strong {
+  display: block;
+  font-size: 13px;
+  color: #fdf4ff;
+  margin-bottom: 3px;
+}
+
+.museum-feat-item p {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #c084fc;
+  margin: 0;
+}
+
+.museum-tg-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%);
+  border: none;
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(147, 51, 234, 0.4);
+  transition: all 0.2s ease;
+}
+
+.museum-tg-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(147, 51, 234, 0.6);
+  filter: brightness(1.1);
+}
+
 
