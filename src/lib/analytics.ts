@@ -1,7 +1,7 @@
 export type AnalyticsEventType =
   | 'page_view' | 'city_change' | 'telegram_click' | 'forecast_view'
   | 'sighting_yes' | 'sighting_no' | 'photo_click' | 'mario_hit'
-  | 'game_start' | 'city_complete' | 'quest_complete';
+  | 'game_start' | 'city_complete' | 'quest_complete' | 'mode_change';
 
 export interface AnalyticsEvent {
   id: string;
