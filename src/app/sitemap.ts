@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://aurora-polaris.ru';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://na-severe-siyat.ru';
   const currentDate = new Date().toISOString();
 
   return [
