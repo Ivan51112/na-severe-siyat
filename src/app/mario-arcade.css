@@ -1116,14 +1116,23 @@
   opacity: 1 !important;
 }
 
-/* Shell & Header layout in Mario theme */
+/* Centered unified column for Mario theme */
 .sky-page--mario .sky-shell {
-  padding-left: 14px !important;
-  padding-right: 14px !important;
-  box-sizing: border-box !important;
   width: 100% !important;
-  max-width: 100vw !important;
-  overflow-x: hidden !important;
+  max-width: 620px !important;
+  margin: 0 auto !important;
+  padding: 16px 14px 28px !important;
+  box-sizing: border-box !important;
+}
+
+.sky-page--mario .sky-main {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  padding: 6px 0 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
 }
 
 .sky-page--mario .sky-header {
@@ -1131,9 +1140,33 @@
   justify-content: space-between !important;
   align-items: center !important;
   width: 100% !important;
-  max-width: 540px !important;
-  margin: 0 auto 10px !important;
+  max-width: 100% !important;
+  margin: 0 auto 12px !important;
   box-sizing: border-box !important;
+}
+
+.sky-page--mario .mario-game-wrapper {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto 10px !important;
+}
+
+.sky-page--mario .quest-action-zone {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto 8px !important;
+}
+
+.sky-page--mario .mario-result-box {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto 20px !important;
+}
+
+.sky-page--mario .sky-seo-guide {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
 }
 
 /* =========================================================
