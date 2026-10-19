@@ -137,6 +137,36 @@ async function generateReport() {
   const tPct = Math.round((cityHits.teriberka / totalCityHits) * 100);
   const kPct = Math.round((cityHits.kirovsk / totalCityHits) * 100);
 
+  // Device Breakdown
+  const deviceHits = { mobile: 0, desktop: 0 };
+  const visitorCityHits = {};
+
+  dayEvents.forEach((e) => {
+    if (e.deviceType && deviceHits[e.deviceType] !== undefined) {
+      deviceHits[e.deviceType]++;
+    }
+    if (e.visitorCity) {
+      visitorCityHits[e.visitorCity] = (visitorCityHits[e.visitorCity] || 0) + 1;
+    }
+  });
+
+  const totalDevices = deviceHits.mobile + deviceHits.desktop || 1;
+  const mobPct = Math.round((deviceHits.mobile / totalDevices) * 100);
+  const deskPct = Math.round((deviceHits.desktop / totalDevices) * 100);
+
+  // Top visitor cities
+  const sortedCities = Object.entries(visitorCityHits)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  let visitorCitiesList = '• Пока нет данных';
+  if (sortedCities.length > 0) {
+    const totalVisitorGeo = Object.values(visitorCityHits).reduce((a, b) => a + b, 0);
+    visitorCitiesList = sortedCities
+      .map(([c, count]) => `• ${c}: <b>${count}</b> (${Math.round((count / totalVisitorGeo) * 100)}%)`)
+      .join('\n');
+  }
+
   // Buttons breakdown
   let finalBtnClicks = 0;
   let headerBtnClicks = 0;
@@ -157,10 +187,14 @@ async function generateReport() {
 📅 <i>${dateStr} (10:00 МСК)</i>
 
 👥 <b>Посетителей (просмотров):</b> <b>${pageViews}</b>
+📱 <b>Устройства:</b> 📱 ${mobPct}% моб. / 💻 ${deskPct}% ПК
 🎮 <b>Начали квест:</b> <b>${gameStarts}</b> (${gameRate}%)
 🏆 <b>Прошли все 3 города:</b> <b>${questCompletes}</b> (${finishRate}%)
 🚀 <b>Переходов в Telegram:</b> <b>${tgTotal}</b>
 📈 <b>Итоговая конверсия:</b> <b>${convRate}%</b>
+
+🌍 <b>Откуда посетители (города):</b>
+${visitorCitiesList}
 
 📍 <b>Интерес к локациям:</b>
 • 🐋 Териберка: <b>${tPct}%</b>

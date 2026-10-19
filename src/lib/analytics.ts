@@ -14,16 +14,76 @@ export interface AnalyticsEvent {
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
+  ip?: string;
+  visitorCity?: string;
+  visitorCountry?: string;
+  deviceType?: 'mobile' | 'desktop';
 }
 
 import fs from 'fs';
 import path from 'path';
+import http from 'http';
 
 // In-memory buffer + persistent JSONL append log
 const eventStore: AnalyticsEvent[] = [];
 const MAX_EVENTS = 2000;
 const DATA_DIR = path.join(process.cwd(), '.data');
 const DATA_FILE = path.join(DATA_DIR, 'analytics.jsonl');
+const GEO_CACHE_FILE = path.join(DATA_DIR, 'geo_cache.json');
+
+const geoCache: Record<string, { city: string; country: string }> = {};
+
+// Load geo cache from disk
+try {
+  if (typeof window === 'undefined') {
+    if (fs.existsSync(GEO_CACHE_FILE)) {
+      const data = fs.readFileSync(GEO_CACHE_FILE, 'utf-8');
+      Object.assign(geoCache, JSON.parse(data));
+    }
+  }
+} catch {}
+
+function saveGeoCache() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(GEO_CACHE_FILE, JSON.stringify(geoCache, null, 2), 'utf-8');
+  } catch {}
+}
+
+export function resolveGeo(ip: string): Promise<{ city: string; country: string } | null> {
+  return new Promise((resolve) => {
+    if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('10.') || ip.startsWith('192.168.')) {
+      return resolve(null);
+    }
+
+    if (geoCache[ip]) {
+      return resolve(geoCache[ip]);
+    }
+
+    const req = http.get(`http://ip-api.com/json/${ip}?lang=ru`, { timeout: 1500 }, (res) => {
+      let body = '';
+      res.on('data', (chunk) => (body += chunk));
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (data && data.status === 'success' && data.city) {
+            const entry = { city: data.city, country: data.country || 'Россия' };
+            geoCache[ip] = entry;
+            saveGeoCache();
+            return resolve(entry);
+          }
+        } catch {}
+        resolve(null);
+      });
+    });
+
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(null);
+    });
+  });
+}
 
 // Initialize and restore recent events on startup
 try {
