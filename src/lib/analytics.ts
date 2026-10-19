@@ -1,6 +1,7 @@
 export type AnalyticsEventType =
   | 'page_view' | 'city_change' | 'telegram_click' | 'forecast_view'
-  | 'sighting_yes' | 'sighting_no' | 'photo_click' | 'mario_hit';
+  | 'sighting_yes' | 'sighting_no' | 'photo_click' | 'mario_hit'
+  | 'game_start' | 'city_complete' | 'quest_complete';
 
 export interface AnalyticsEvent {
   id: string;
@@ -43,6 +44,9 @@ export function getAnalyticsSummary() {
   const sightingsYes = eventStore.filter((e) => e.eventType === 'sighting_yes').length;
   const sightingsNo = eventStore.filter((e) => e.eventType === 'sighting_no').length;
   const photoClicks = eventStore.filter((e) => e.eventType === 'photo_click').length;
+  const gameStarts = eventStore.filter((e) => e.eventType === 'game_start').length;
+  const cityCompletes = eventStore.filter((e) => e.eventType === 'city_complete').length;
+  const questCompletes = eventStore.filter((e) => e.eventType === 'quest_complete').length;
 
   const clicksByCity: Record<string, number> = {};
   const clicksBySource: Record<string, number> = {};
@@ -68,6 +72,9 @@ export function getAnalyticsSummary() {
     sightingsYes,
     sightingsNo,
     photoClicks,
+    gameStarts,
+    cityCompletes,
+    questCompletes,
     conversionRate,
     clicksByCity,
     clicksBySource,

@@ -1,97 +1,61 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { CityId, CITIES } from '@/lib/conditions';
 
-interface MarioAuroraSceneProps {
-  city: CityId;
-  cloudCover: number | null;
-  cloudLow?: number | null;
-  precipitationKind?: 'none' | 'rain' | 'snow' | 'unknown' | null;
-  signal: 'green' | 'yellow' | 'red' | 'unknown' | null;
-  auroraChance: number | null;
-  kpIndex: number | null;
-  onHit?: () => void;
+export interface MarioSceneHandle {
+  triggerJump: () => void;
 }
 
-export function MarioAuroraScene({
-  city,
-  cloudCover,
-  cloudLow,
-  precipitationKind,
-  signal,
-  auroraChance,
-  kpIndex,
-  onHit,
-}: MarioAuroraSceneProps) {
+export interface MarioAuroraSceneProps {
+  city: CityId;
+  progress: number; // 0, 1, 2, 3
+  onTap: (newProgress: number) => void;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
+}
+
+export const MarioAuroraScene = forwardRef<MarioSceneHandle, MarioAuroraSceneProps>(function MarioAuroraScene(
+  { city, progress, onTap, soundEnabled, onToggleSound },
+  ref
+) {
   // Bus and character states
   type BusStatus = 'driving_in' | 'parked' | 'driving_out' | 'gone';
   const [busState, setBusState] = useState<BusStatus>('driving_in');
   const [marioOut, setMarioOut] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
   const [isBlockHit, setIsBlockHit] = useState(false);
-  const [auroraScore, setAuroraScore] = useState(0);
   const [burstActive, setBurstActive] = useState(false);
-  const [floatingPoints, setFloatingPoints] = useState<{ id: number; text: string; kind: 'good' | 'warn' | 'bad' }[]>([]);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [floatingPoints, setFloatingPoints] = useState<{ id: number; text: string; kind: 'good' | 'info' }[]>([]);
   const [skierPos, setSkierPos] = useState({ x: 15, y: 15 });
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const isJumpingRef = useRef(false);
 
-  // REAL WEATHER EVALUATION:
-  // Overcast: dense clouds, high cloud cover, or precipitation
-  const isOvercast =
-    (cloudCover !== null && cloudCover >= 65) ||
-    (cloudLow !== null && cloudLow !== undefined && cloudLow >= 75) ||
-    precipitationKind === 'snow' ||
-    precipitationKind === 'rain' ||
-    signal === 'red';
-
-  // Patchy: cloud breaks, changing visibility
-  const isPatchy =
-    !isOvercast &&
-    ((cloudCover !== null && cloudCover >= 22) ||
-      (cloudLow !== null && cloudLow !== undefined && cloudLow >= 30) ||
-      signal === 'yellow');
-
-  // Clear: starry sky with direct view
-  const isClearSky = !isOvercast && !isPatchy;
-
-  // Sky visibility mode
-  const currentSkyMode = isOvercast ? 'overcast' : isPatchy ? 'patchy' : 'clear';
-
-  // Load saved score
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('aurora_mario_score');
-      if (saved) setAuroraScore(parseInt(saved, 10) || 0);
-    }
-  }, []);
-
-  // Whenever city changes, trigger the tourist bus arrival!
+  // Tourist bus arrival whenever city changes (Variant A)
   useEffect(() => {
     setBusState('driving_in');
     setMarioOut(false);
     setBurstActive(false);
 
-    // 1. Bus parks after 1.0s
+    // 1. Bus parks after 0.8s
     const t1 = setTimeout(() => {
       setBusState('parked');
-    }, 1000);
+    }, 800);
 
-    // 2. Mario steps out after 1.3s
+    // 2. Mario steps out after 1.1s
     const t2 = setTimeout(() => {
       setMarioOut(true);
-    }, 1300);
+    }, 1100);
 
-    // 3. Bus drives off into the tundra after 1.9s, leaving Mario
+    // 3. Bus drives off into tundra after 1.6s
     const t3 = setTimeout(() => {
       setBusState('driving_out');
-    }, 1900);
+    }, 1600);
 
-    // 4. Bus completely vanishes after 2.7s
+    // 4. Bus completely vanishes after 2.3s
     const t4 = setTimeout(() => {
       setBusState('gone');
-    }, 2700);
+    }, 2300);
 
     return () => {
       clearTimeout(t1);
@@ -102,7 +66,7 @@ export function MarioAuroraScene({
   }, [city]);
 
   // Web Audio 8-bit sound generator
-  const play8BitSound = (type: 'jump' | 'hit_win' | 'hit_patchy' | 'hit_miss' | 'warp') => {
+  const play8BitSound = (type: 'jump' | 'hit_1' | 'hit_2' | 'hit_win' | 'chime') => {
     if (!soundEnabled || typeof window === 'undefined') return;
     try {
       const AudioCtx =
@@ -123,74 +87,63 @@ export function MarioAuroraScene({
 
       if (type === 'jump') {
         osc.type = 'square';
-        osc.frequency.setValueAtTime(150, now);
-        osc.frequency.exponentialRampToValueAtTime(550, now + 0.15);
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(580, now + 0.14);
         gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.16);
-      } else if (type === 'hit_win') {
-        // Triumphant multi-harmonic chord (violet, emerald, gold)
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(987.77, now);
-        osc.frequency.setValueAtTime(1318.51, now + 0.08);
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.35);
-
-        [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
-          const chordOsc = ctx.createOscillator();
-          const chordGain = ctx.createGain();
-          chordOsc.type = 'triangle';
-          chordOsc.frequency.setValueAtTime(freq, now + 0.1 + idx * 0.06);
-          chordGain.gain.setValueAtTime(0.07, now + 0.1 + idx * 0.06);
-          chordGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6 + idx * 0.06);
-          chordOsc.connect(chordGain);
-          chordGain.connect(ctx.destination);
-          chordOsc.start(now + 0.1 + idx * 0.06);
-          chordOsc.stop(now + 0.6 + idx * 0.06);
-        });
-      } else if (type === 'hit_patchy') {
-        // Gentle double-chime for breaks in clouds
+        osc.stop(now + 0.15);
+      } else if (type === 'hit_1') {
+        // Step 1: Light cloud break chime
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(587.33, now);
-        osc.frequency.setValueAtTime(880.0, now + 0.1);
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
         gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.35);
-      } else if (type === 'hit_miss') {
-        // Soft cloud muff sound (descending noise buzz)
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(220, now);
-        osc.frequency.linearRampToValueAtTime(110, now + 0.25);
-        gain.gain.setValueAtTime(0.07, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
         osc.stop(now + 0.28);
-      } else if (type === 'warp') {
-        // Authentic Mario warp pipe descending sound
-        [523.25, 466.16, 415.3, 369.99, 329.63, 293.66, 261.63].forEach((freq, idx) => {
-          const pipeOsc = ctx.createOscillator();
-          const pipeGain = ctx.createGain();
-          pipeOsc.type = 'square';
-          pipeOsc.frequency.setValueAtTime(freq, now + idx * 0.07);
-          pipeGain.gain.setValueAtTime(0.12, now + idx * 0.07);
-          pipeGain.gain.exponentialRampToValueAtTime(0.001, now + (idx + 1) * 0.07);
-          pipeOsc.connect(pipeGain);
-          pipeGain.connect(ctx.destination);
-          pipeOsc.start(now + idx * 0.07);
-          pipeOsc.stop(now + (idx + 1) * 0.07);
+      } else if (type === 'hit_2') {
+        // Step 2: Bright ascending aurora chord
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(freq, now + idx * 0.05);
+          g.gain.setValueAtTime(0.09, now + idx * 0.05);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.35 + idx * 0.05);
+          o.connect(g);
+          g.connect(ctx.destination);
+          o.start(now + idx * 0.05);
+          o.stop(now + 0.35 + idx * 0.05);
         });
+      } else if (type === 'hit_win') {
+        // Step 3: Triumphant victory fanfare (major triad arpeggio)
+        [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((freq, idx) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'square';
+          o.frequency.setValueAtTime(freq, now + idx * 0.06);
+          g.gain.setValueAtTime(0.1, now + idx * 0.06);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.45 + idx * 0.06);
+          o.connect(g);
+          g.connect(ctx.destination);
+          o.start(now + idx * 0.06);
+          o.stop(now + 0.45 + idx * 0.06);
+        });
+      } else if (type === 'chime') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.15);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
       }
     } catch {
       // Audio policy restricted
@@ -198,83 +151,66 @@ export function MarioAuroraScene({
   };
 
   const handleJump = () => {
-    if (isJumping || !marioOut) return;
+    if (isJumpingRef.current || !marioOut) return;
 
+    isJumpingRef.current = true;
     setIsJumping(true);
     play8BitSound('jump');
 
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      navigator.vibrate?.([25, 30, 45]);
+      navigator.vibrate?.(25);
     }
 
     setTimeout(() => {
       setIsBlockHit(true);
 
+      const nextProg = Math.min(3, progress + 1);
       const pointId = Date.now();
-      const currentCityName = CITIES[city].nameRu;
 
-      if (isClearSky) {
-        // CLEAR SKY: Full Aurora victory!
+      if (nextProg === 1) {
+        play8BitSound('hit_1');
+        setFloatingPoints((prev) => [...prev, { id: pointId, text: '☁️ -30% ТУЧ!', kind: 'info' }]);
+      } else if (nextProg === 2) {
+        play8BitSound('hit_2');
+        setFloatingPoints((prev) => [...prev, { id: pointId, text: '✨ ПРОСВЕТ!', kind: 'good' }]);
+      } else if (nextProg === 3) {
         setBurstActive(true);
         play8BitSound('hit_win');
-
-        const nextScore = auroraScore + 1;
-        setAuroraScore(nextScore);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('aurora_mario_score', nextScore.toString());
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate?.([40, 30, 80]);
         }
-
-        const winPhrases = [
-          '✨ 100% СИЯЕТ!',
-          '🌟 ЧИСТОЕ НЕБО!',
-          '🔥 КУШ В ' + currentCityName.toUpperCase() + '!',
-          '🚀 ВЫЕЗЖАЕМ!',
-        ];
-        const chosen = winPhrases[nextScore % winPhrases.length];
-        setFloatingPoints((prev) => [...prev, { id: pointId, text: chosen, kind: 'good' }]);
-      } else if (isPatchy) {
-        // PATCHY SKY: Breaks in clouds
-        setBurstActive(true);
-        play8BitSound('hit_patchy');
-
-        const patchyPhrases = [
-          '🌤️ ПРОСВЕТЫ В ТУЧАХ!',
-          '🔍 ЛОВИ В РАЗРЫВАХ!',
-          '⚡ ЕСТЬ ОКНО!',
-        ];
-        const chosen = patchyPhrases[Math.floor(Math.random() * patchyPhrases.length)];
-        setFloatingPoints((prev) => [...prev, { id: pointId, text: chosen, kind: 'warn' }]);
+        const winTitle =
+          city === 'murmansk'
+            ? '✨ МУРМАНСК СИЯЕТ!'
+            : city === 'teriberka'
+            ? '🐋 ТЕРИБЕРКА СИЯЕТ!'
+            : '⛷️ ХИБИНЫ СИЯЮТ!';
+        setFloatingPoints((prev) => [...prev, { id: pointId, text: winTitle, kind: 'good' }]);
       } else {
-        // OVERCAST SKY: Clouds block aurora completely
-        setBurstActive(false);
-        play8BitSound('hit_miss');
-
-        const cloudsVal = cloudCover !== null ? Math.round(cloudCover) : 95;
-        const missPhrases = [
-          `☁️ ТУЧИ ${cloudsVal}%!`,
-          '🌫️ НЕБО ЗАКРЫТО!',
-          '❄️ СИЯНИЯ НЕ ВИДНО',
-          '🚗 ИЩИ ПРОСВЕТЫ!',
-        ];
-        const chosen = missPhrases[Math.floor(Math.random() * missPhrases.length)];
-        setFloatingPoints((prev) => [...prev, { id: pointId, text: chosen, kind: 'bad' }]);
+        // Already completed, play fun chime
+        play8BitSound('chime');
       }
 
-      setTimeout(() => {
-        setFloatingPoints((prev) => prev.filter((p) => p.id !== pointId));
-      }, 1300);
-
-      if (onHit) onHit();
+      onTap(nextProg);
 
       setTimeout(() => {
         setIsBlockHit(false);
-      }, 180);
-    }, 250);
+      }, 300);
+
+      setTimeout(() => {
+        setFloatingPoints((prev) => prev.filter((p) => p.id !== pointId));
+      }, 1600);
+    }, 240);
 
     setTimeout(() => {
+      isJumpingRef.current = false;
       setIsJumping(false);
-    }, 550);
+    }, 450);
   };
+
+  useImperativeHandle(ref, () => ({
+    triggerJump: handleJump,
+  }));
 
   // Animate skier in Kirovsk
   useEffect(() => {
@@ -290,40 +226,27 @@ export function MarioAuroraScene({
   }, [city]);
 
   return (
-    <div className={`mario-game-wrapper world-${city} sky-mode-${currentSkyMode}`}>
-      {/* 8-bit ARCADE HUD BAR */}
-      <div className="mario-hud">
-        <div className="hud-item hud-hunter">
-          <span className="hud-label">ОХОТНИК</span>
-          <span className="hud-val">MARIO-SPRINTER</span>
+    <div className={`mario-game-wrapper world-${city} stage-step-${progress}`}>
+      {/* HUD: Clean Progress Dots & Sound Toggle */}
+      <div className="mario-hud mario-hud--minimal">
+        <div className="quest-step-indicator" aria-label={`Прогресс локации: ${progress} из 3`}>
+          <span className="quest-step-label">ОХОТА:</span>
+          <div className="quest-step-dots">
+            <span className={`quest-dot ${progress >= 1 ? 'is-active' : ''}`} />
+            <span className={`quest-dot ${progress >= 2 ? 'is-active' : ''}`} />
+            <span className={`quest-dot ${progress >= 3 ? 'is-active' : ''}`} />
+          </div>
         </div>
-        <div className="hud-item hud-coins">
-          <span className="hud-label">СИЯНИЙ ВЫБИТО</span>
-          <span className="hud-val">
-            <span className="hud-star-icon">🌟</span>x{auroraScore.toString().padStart(2, '0')}
-          </span>
-        </div>
-        <div className="hud-item hud-world">
-          <span className="hud-label">РЕЙД</span>
-          <span className="hud-val">
-            {city === 'teriberka' ? 'ОКЕАН 1-2' : city === 'kirovsk' ? 'ХИБИНЫ 1-3' : 'МУРМАНСК 1-1'}
-          </span>
-        </div>
-        <div className="hud-item hud-kp">
-          <span className="hud-label">ВИДИМОСТЬ</span>
-          <span
-            className={`hud-val ${
-              isClearSky ? 'highlight-win' : isPatchy ? 'highlight-warn' : 'highlight-cloud'
-            }`}
-          >
-            {isClearSky ? '🟢 СИЯЕТ' : isPatchy ? '🟡 ПРОСВЕТЫ' : '🔴 ТУЧИ'}
-          </span>
-        </div>
+
         <button
           type="button"
           className="hud-sound-toggle"
-          onClick={() => setSoundEnabled(!soundEnabled)}
-          title="Включить / выключить 8-битный звук"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSound();
+          }}
+          title={soundEnabled ? 'Выключить 8-битный звук' : 'Включить 8-битный звук'}
+          aria-label={soundEnabled ? 'Выключить звук' : 'Включить звук'}
         >
           {soundEnabled ? '🔊' : '🔇'}
         </button>
@@ -335,84 +258,82 @@ export function MarioAuroraScene({
         onClick={handleJump}
         role="button"
         tabIndex={0}
-        aria-label="Прыгнуть и выбить прогноз сияния"
+        aria-label="Нажать, чтобы прыгнуть и разогнать тучи"
       >
-        {/* DYNAMIC SKY CANVAS: 100% FAITHFUL TO REAL FORECAST */}
-        <div className={`mario-aurora-sky sky-render-${currentSkyMode} ${burstActive ? 'burst-active' : ''}`}>
-          
-          {/* 1. HERALDIC MURMANSK COAT-OF-ARMS AURORA RAYS (Visible only in clear/patchy sky!) */}
-          {!isOvercast && (
-            <div className="murmansk-heraldic-aurora">
-              <svg viewBox="0 0 360 115" className="heraldic-aurora-svg" preserveAspectRatio="none">
-                <defs>
-                  {/* REALISTIC MULTI-COLOR GRADIENT: Violet -> Magenta -> Cyan -> Emerald -> Gold -> Ruby */}
-                  <linearGradient id="murmanskMultiColorRay" x1="0%" y1="100%" x2="0%" y2="0%">
-                    {/* Bottom fringe: mysterious violet & magenta */}
-                    <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.05" />
-                    <stop offset="15%" stopColor="#c026d3" stopOpacity="0.45" />
-                    {/* Lower beam: cool cyan */}
-                    <stop offset="35%" stopColor="#06b6d4" stopOpacity="0.6" />
-                    {/* Main pillar: authentic emerald green & golden heart */}
-                    <stop offset="55%" stopColor="#10b981" stopOpacity="0.75" />
-                    <stop offset="72%" stopColor="#fde047" stopOpacity="0.8" />
-                    {/* High altitude tips: soft ruby & amethyst */}
-                    <stop offset="90%" stopColor="#f43f5e" stopOpacity="0.55" />
-                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.05" />
-                  </linearGradient>
+        {/* DYNAMIC SKY WITH CLOUD DISSIPATION BASED ON PROGRESS */}
+        <div className={`mario-aurora-sky progress-sky-${progress} ${burstActive ? 'burst-active' : ''}`}>
+          {/* 1. HERALDIC MURMANSK COAT-OF-ARMS AURORA RAYS */}
+          <div
+            className="murmansk-heraldic-aurora"
+            style={{
+              opacity: progress === 0 ? 0 : progress === 1 ? 0.38 : progress === 2 ? 0.72 : 1,
+              transform: progress === 0 ? 'translateY(16px)' : progress === 1 ? 'translateY(8px)' : 'translateY(0)',
+              transition: 'opacity 0.6s ease, transform 0.6s ease',
+            }}
+          >
+            <svg viewBox="0 0 360 115" className="heraldic-aurora-svg" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="murmanskMultiColorRay" x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.05" />
+                  <stop offset="15%" stopColor="#c026d3" stopOpacity="0.45" />
+                  <stop offset="35%" stopColor="#06b6d4" stopOpacity="0.6" />
+                  <stop offset="55%" stopColor="#10b981" stopOpacity="0.75" />
+                  <stop offset="72%" stopColor="#fde047" stopOpacity="0.8" />
+                  <stop offset="90%" stopColor="#f43f5e" stopOpacity="0.55" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.05" />
+                </linearGradient>
 
-                  <filter id="softAuroraGlow" x="-30%" y="-30%" width="160%" height="160%">
-                    <feGaussianBlur stdDeviation="3.5" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                  </filter>
-                </defs>
+                <filter id="softAuroraGlow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
 
-                <g className="heraldic-rays" filter="url(#softAuroraGlow)">
-                  {/* Stylized Murmansk coat of arms geometry */}
-                  <polygon points="35,115 42,115 48,50 28,50" className="h-ray ray-1" fill="url(#murmanskMultiColorRay)" />
-                  <polygon points="62,115 70,115 78,36 54,36" className="h-ray ray-2" fill="url(#murmanskMultiColorRay)" />
-                  <polygon points="92,115 100,115 110,24 82,24" className="h-ray ray-3" fill="url(#murmanskMultiColorRay)" />
-                  <polygon points="122,115 130,115 144,14 114,14" className="h-ray ray-4" fill="url(#murmanskMultiColorRay)" />
-                  <polygon points="152,115 162,115 178,5 146,5" className="h-ray ray-5" fill="url(#murmanskMultiColorRay)" />
-                  <polygon points="186,115 196,115 214,5 182,5" className="h-ray ray-6" fill="url(#murmanskMultiColorRay)" />
-                  <polygon points="218,115 226,115 246,14 216,14" className="h-ray ray-7" fill="url(#murmanskMultiColorRay)" />
-                  <polygon points="248,115 256,115 274,24 246,24" className="h-ray ray-8" fill="url(#murmanskMultiColorRay)" />
-                  <polygon points="278,115 286,115 302,36 278,36" className="h-ray ray-9" fill="url(#murmanskMultiColorRay)" />
-                  <polygon points="306,115 314,115 326,50 306,50" className="h-ray ray-10" fill="url(#murmanskMultiColorRay)" />
-                </g>
-              </svg>
-            </div>
-          )}
+              <g className="heraldic-rays" filter="url(#softAuroraGlow)">
+                <polygon points="35,115 42,115 48,50 28,50" className="h-ray ray-1" fill="url(#murmanskMultiColorRay)" />
+                <polygon points="62,115 70,115 78,36 54,36" className="h-ray ray-2" fill="url(#murmanskMultiColorRay)" />
+                <polygon points="92,115 100,115 110,24 82,24" className="h-ray ray-3" fill="url(#murmanskMultiColorRay)" />
+                <polygon points="122,115 130,115 144,14 114,14" className="h-ray ray-4" fill="url(#murmanskMultiColorRay)" />
+                <polygon points="152,115 162,115 178,5 146,5" className="h-ray ray-5" fill="url(#murmanskMultiColorRay)" />
+                <polygon points="186,115 196,115 214,5 182,5" className="h-ray ray-6" fill="url(#murmanskMultiColorRay)" />
+                <polygon points="218,115 226,115 246,14 216,14" className="h-ray ray-7" fill="url(#murmanskMultiColorRay)" />
+                <polygon points="248,115 256,115 274,24 246,24" className="h-ray ray-8" fill="url(#murmanskMultiColorRay)" />
+                <polygon points="278,115 286,115 302,36 278,36" className="h-ray ray-9" fill="url(#murmanskMultiColorRay)" />
+                <polygon points="306,115 314,115 326,50 306,50" className="h-ray ray-10" fill="url(#murmanskMultiColorRay)" />
+              </g>
+            </svg>
+          </div>
 
-          {/* 2. Soft Ambient Waves with Violet & Turquoise tints */}
-          {!isOvercast && (
-            <>
-              <div className="aurora-wave wave-1" />
-              <div className="aurora-wave wave-2" />
-              <div className="aurora-wave wave-3" />
-            </>
-          )}
+          {/* 2. Ambient Waves */}
+          <div
+            className="aurora-waves-layer"
+            style={{
+              opacity: progress === 0 ? 0 : progress === 1 ? 0.3 : progress === 2 ? 0.65 : 1,
+              transition: 'opacity 0.6s ease',
+            }}
+          >
+            <div className="aurora-wave wave-1" />
+            <div className="aurora-wave wave-2" />
+            <div className="aurora-wave wave-3" />
+          </div>
 
-          {/* 3. Starry night: crisp twinkling stars in clear sky */}
-          {!isOvercast && <div className="pixel-stars" />}
+          {/* 3. Pixel Stars */}
+          <div
+            className="pixel-stars"
+            style={{
+              opacity: progress === 0 ? 0 : progress === 1 ? 0.25 : progress === 2 ? 0.65 : 1,
+              transition: 'opacity 0.6s ease',
+            }}
+          />
 
-          {/* 4. REAL CLOUDS OVERLAY: Shown when overcast or patchy */}
-          {isOvercast && (
-            <div className="real-overcast-overlay">
-              <div className="overcast-sky-wash" />
-              <div className="storm-cloud cloud-overcast-1" />
-              <div className="storm-cloud cloud-overcast-2" />
-              <div className="storm-cloud cloud-overcast-3" />
-              <div className="storm-cloud cloud-overcast-4" />
-              {precipitationKind === 'snow' && <div className="pixel-snowfall" />}
-            </div>
-          )}
-
-          {isPatchy && (
-            <div className="real-patchy-overlay">
-              <div className="storm-cloud cloud-patchy-1" />
-              <div className="storm-cloud cloud-patchy-2" />
-            </div>
-          )}
+          {/* 4. QUEST CLOUD CURTAIN: Heavy clouds parting horizontally with each tap */}
+          <div className={`quest-cloud-curtain curtain-step-${progress}`}>
+            <div className="curtain-cloud cloud-far-left" />
+            <div className="curtain-cloud cloud-far-right" />
+            <div className="curtain-cloud cloud-center" />
+            <div className="curtain-cloud cloud-center-low" />
+            <div className="curtain-fog-overlay" />
+          </div>
         </div>
 
         {/* CITY SPECIFIC ANIMATED BACKGROUNDS */}
@@ -548,14 +469,14 @@ export function MarioAuroraScene({
           </div>
         )}
 
-        {/* FLOATING QUESTION BLOCK: Question mark when clear, cloud when overcast */}
+        {/* FLOATING QUESTION BLOCK: ? on steps 0, 1, 2, becomes 🌟 on victory (step 3) */}
         <div className={`mario-block-container ${isBlockHit ? 'is-bumped' : ''}`}>
-          <div className={`retro-block question-block ${isOvercast ? 'is-cloud-block' : ''}`}>
+          <div className={`retro-block question-block ${progress === 3 ? 'is-victory-star-block' : ''}`}>
             <span className="block-rivet rivet-tl" />
             <span className="block-rivet rivet-tr" />
             <span className="block-rivet rivet-bl" />
             <span className="block-rivet rivet-br" />
-            <span className="block-qmark">{isOvercast ? '☁' : isPatchy ? '?' : '?'}</span>
+            <span className="block-qmark">{progress === 3 ? '🌟' : '?'}</span>
           </div>
 
           {/* Floating Points / Badges */}
@@ -570,34 +491,25 @@ export function MarioAuroraScene({
         {busState !== 'gone' && (
           <div className={`tourist-sprinter ${busState}`}>
             <svg viewBox="0 0 160 80" className="sprinter-svg" aria-label="Туристический микроавтобус Mercedes Sprinter">
-              <polygon points="150,56 220,40 220,75 150,66" fill="url(#sprinterLightGlow)" opacity="0.6" />
-              <defs>
-                <linearGradient id="sprinterLightGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#fef08a" stopOpacity="0.8" />
-                  <stop offset="100%" stopColor="#fef08a" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-
               <path
-                d="M10,22 L112,22 C122,22 136,30 143,42 L152,48 C155,50 155,54 155,60 L152,66 L10,66 C8,66 6,64 6,60 L6,26 C6,23 8,22 10,22 Z"
-                fill="#ffffff"
-                stroke="#0f172a"
-                strokeWidth="2.5"
+                d="M 16,56 L 16,34 C 16,30 20,24 28,24 L 118,24 C 126,24 136,27 144,36 L 152,47 C 154,50 154,53 154,56 Z"
+                fill="#f8fafc"
+                stroke="#cbd5e1"
+                strokeWidth="1.5"
               />
+              <rect x="24" y="28" width="22" height="15" rx="3" fill="#0f172a" />
+              <rect x="50" y="28" width="26" height="15" rx="3" fill="#0f172a" />
+              <rect x="80" y="28" width="26" height="15" rx="3" fill="#0f172a" />
+              <path d="M 110,28 L 138,28 C 142,28 147,33 149,38 L 149,43 L 110,43 Z" fill="#0284c7" />
 
-              <rect x="16" y="27" width="22" height="15" fill="#0f172a" rx="2" />
-              <rect x="42" y="27" width="22" height="15" fill="#0f172a" rx="2" />
-              <rect x="68" y="27" width="22" height="15" fill="#0f172a" rx="2" />
-              <path d="M94,27 L114,27 C122,27 132,35 136,42 L94,42 Z" fill="#0f172a" />
+              <rect x="14" y="54" width="142" height="13" fill="#f1f5f9" />
+              <rect x="14" y="62" width="142" height="6" fill="#334155" />
 
-              <rect x="146" y="52" width="7" height="9" fill="#1e293b" rx="1.5" />
-              <circle cx="149.5" cy="56.5" r="3" fill="#cbd5e1" />
-              <line x1="149.5" y1="53.5" x2="149.5" y2="59.5" stroke="#0f172a" strokeWidth="0.8" />
-              <line x1="147" y1="58" x2="152" y2="55" stroke="#0f172a" strokeWidth="0.8" />
+              <rect x="150" y="52" width="5" height="5" rx="1" fill="#facc15" />
+              <rect x="14" y="52" width="4" height="6" rx="1" fill="#ef4444" />
 
-              <rect x="148" y="49" width="5" height="3.5" fill="#fef08a" rx="1" />
+              <circle cx="151" cy="49" r="2.5" fill="#e2e8f0" stroke="#475569" strokeWidth="0.8" />
 
-              {/* Rotating wheels */}
               <g className={`wheel-unit ${busState.includes('driving') ? 'is-spinning' : ''}`}>
                 <circle cx="34" cy="66" r="11" fill="#0f172a" />
                 <circle cx="34" cy="66" r="7.5" fill="#334155" />
@@ -657,27 +569,6 @@ export function MarioAuroraScene({
           <div className="ground-brick-pattern" />
         </div>
       </div>
-
-      {/* ACTION BUTTON: Reacts directly to current real weather */}
-      <div className="mario-controls">
-        <button
-          type="button"
-          className={`mario-action-btn ${
-            isClearSky ? 'btn-favorable' : isPatchy ? 'btn-warn' : 'btn-overcast'
-          }`}
-          onClick={handleJump}
-        >
-          <span className="btn-icon">{isClearSky ? '🍄' : isPatchy ? '🌤️' : '☁️'}</span>
-          <span className="btn-text">
-            {isClearSky
-              ? '✨ ВЫБИТЬ СИЯНИЕ ИЗ БЛОКА!'
-              : isPatchy
-              ? '🌤️ ВЫБИТЬ ПРОСВЕТ В ТУЧАХ!'
-              : `☁️ ОБЛАЧНО (${cloudCover !== null ? Math.round(cloudCover) : 95}%) — СИЯНИЕ СКРЫТО`}
-          </span>
-          <span className="btn-hint">(ЖМИ НА КНОПКУ ИЛИ ЭКРАН)</span>
-        </button>
-      </div>
     </div>
   );
-}
+});

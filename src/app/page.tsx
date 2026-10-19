@@ -1,24 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, ChevronDown, Compass, MapPin, Send, Sparkles } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Compass, Send, Sparkles } from 'lucide-react';
 import { CITIES, CityConditions, CityId, LiveConditions } from '@/lib/conditions';
-import { selectVisualScene } from '@/lib/visual-scene';
 import { sendAnalytics } from '@/lib/client-analytics';
-import { MarioAuroraScene } from './MarioAuroraScene';
+import { MarioAuroraScene, MarioSceneHandle } from './MarioAuroraScene';
 
 type Language = 'ru' | 'zh';
 type DemoScene = 'aurora' | 'day' | 'clouds' | 'snow' | null;
 const CITY_IDS: CityId[] = ['murmansk', 'teriberka', 'kirovsk'];
 const CHANNEL_URL = process.env.NEXT_PUBLIC_TELEGRAM_URL?.trim() || 'https://t.me/na_severe_siyat';
-const HAS_CHANNEL = Boolean(CHANNEL_URL && /^https:\/\/(?:t\.me|telegram\.me)\//i.test(CHANNEL_URL));
 
 const copy = {
   ru: {
-    brand: 'НА СЕВЕРЕ — СИЯТЬ',
-    eyebrow: 'СЕВЕРНОЕ СИЯНИЕ · МУРМАНСКАЯ ОБЛАСТЬ',
-    title: 'Что с небом сейчас?',
+    brand: 'На Севере — сиять',
     current: 'ОБЛАЧНОСТЬ СЕЙЧАС',
     conditions: {
       clear: ['Небо почти ясное', 'По погодной модели облаков мало — отличный сектор для обзора.'],
@@ -35,17 +31,9 @@ const copy = {
     withoutClouds: 'без учёта облаков',
     updated: 'Данные погоды',
     demo: 'СЦЕНАРИЙ ДИЗАЙНА · НЕ ТЕКУЩАЯ ПОГОДА',
-    telegramTitle: 'Telegram-канал',
-    telegramButton: 'Подписаться на Telegram-канал',
-    telegramSubtitle: 'Спутниковые снимки Кольского и оповещения о просветах',
-    telegramPending: 'Подписаться на Telegram-канал',
-    telegramSoon: 'Скоро откроется',
-    telegramUnavailable: 'Telegram-канал пока не открыт.',
   },
   zh: {
     brand: '极光 / 摩尔曼斯克',
-    eyebrow: '北极光 · 摩尔曼斯克州',
-    title: '现在的天空怎么样？',
     current: '当前云量',
     conditions: {
       clear: ['天空基本晴朗', '根据天气模型，云量较少。'],
@@ -62,12 +50,6 @@ const copy = {
     withoutClouds: '未计入云量',
     updated: '天气数据',
     demo: '设计演示 · 非当前天气',
-    telegramTitle: 'Telegram 频道',
-    telegramButton: '订阅 Telegram 频道',
-    telegramSubtitle: '卫星云图与极光观测信号',
-    telegramPending: '订阅 Telegram 频道',
-    telegramSoon: '即将开放',
-    telegramUnavailable: 'Telegram 频道尚未开放。',
   },
 } as const;
 
@@ -80,36 +62,22 @@ function cloudState(conditions: CityConditions | undefined) {
   return 'clear' as const;
 }
 
-function currentScene(city: CityId, conditions: CityConditions | undefined) {
-  if (!conditions || conditions.cloudCover === null) {
-    return { src: '/images/hero-' + city + '-cloudy.png', weather: 'unknown', night: false };
-  }
-  const phase = conditions.sunAltitude >= -1 ? 'day' : conditions.sunAltitude > -12 ? 'twilight' : 'night';
-  const scene = selectVisualScene({
-    city,
-    phase,
-    cloudCover: conditions.cloudCover,
-    precipitation: conditions.precipitationKind,
-    signal: conditions.signal,
-    auroraModel: conditions.auroraModel,
-  });
-  if (phase === 'night' && scene.weather === 'clear' && conditions.auroraModel !== null && conditions.auroraModel >= 20) {
-    return { src: '/images/hero-' + city + '-aurora.png', weather: 'clear', night: true };
-  }
-  if (scene.weather === 'rain') return { src: '/images/hero-' + city + '-rain.png', weather: 'rain', night: phase === 'night' };
-  if (scene.weather === 'clouds' || scene.weather === 'breaks') {
-    return { src: '/images/hero-' + city + '-cloudy.png', weather: scene.weather, night: phase === 'night' };
-  }
-  if (phase === 'day') return { src: '/images/hero-' + city + '-day.png', weather: 'clear', night: false };
-  return { src: scene.src, weather: scene.weather, night: phase === 'night' };
-}
-
 export default function HomePage() {
   const [language] = useState<Language>('ru');
   const [city, setCity] = useState<CityId>('murmansk');
   const [data, setData] = useState<LiveConditions | null>(null);
   const [demoScene, setDemoScene] = useState<DemoScene>(null);
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
+
+  // Quest progress (0..3) per city in current session
+  const [cityProgress, setCityProgress] = useState<Record<CityId, number>>({
+    murmansk: 0,
+    teriberka: 0,
+    kirovsk: 0,
+  });
+  const [hasTapped, setHasTapped] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const marioSceneRef = useRef<MarioSceneHandle | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -122,10 +90,7 @@ export default function HomePage() {
 
     let active = true;
     const refresh = async () => {
-      // Don't waste mobile battery/traffic if tab is hidden in background
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
-        return;
-      }
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       try {
         const response = await fetch('/api/conditions', { cache: 'no-store' });
         if (!response.ok) throw new Error('Conditions unavailable');
@@ -153,6 +118,35 @@ export default function HomePage() {
     };
   }, []);
 
+  const handleGameTap = (newProgress: number) => {
+    if (!hasTapped) {
+      setHasTapped(true);
+      sendAnalytics('game_start', city, 'ru');
+    }
+
+    setCityProgress((prev) => ({
+      ...prev,
+      [city]: newProgress,
+    }));
+
+    if (newProgress === 3) {
+      sendAnalytics('city_complete', city, 'ru');
+      if (city === 'kirovsk') {
+        sendAnalytics('quest_complete', city, 'ru');
+      }
+    }
+  };
+
+  const handleCityChange = (newCity: CityId) => {
+    if (city !== newCity) {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate?.(15);
+      }
+      sendAnalytics('city_change', newCity, 'ru');
+      setCity(newCity);
+    }
+  };
+
   const t = copy[language];
   const demoConditions = demoScene
     ? ({
@@ -164,7 +158,6 @@ export default function HomePage() {
     : null;
   const conditions = demoConditions || data?.cities[city];
   const state = cloudState(conditions);
-  const visual = currentScene(city, conditions);
   const [statusTitle, statusBody] = t.conditions[state];
   const updated = conditions?.weatherTime
     ? new Intl.DateTimeFormat('ru-RU', {
@@ -193,10 +186,11 @@ export default function HomePage() {
   ];
 
   return (
-    <main className={'sky-page sky-page--mario'}>
+    <main className="sky-page sky-page--mario">
       <div className="sky-backdrop sky-backdrop--cosmic" aria-hidden="true" />
       <div className="sky-shade" aria-hidden="true" />
       <div className="sky-shell">
+        {/* 1. COMPACT HEADER WITH DIRECT ROUND TELEGRAM BUTTON */}
         <header className="sky-header">
           <Link className="sky-brand" href="/" aria-label="На Севере — сиять">
             <span className="sky-brand-mark" aria-hidden="true">
@@ -208,83 +202,131 @@ export default function HomePage() {
             href={CHANNEL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="sky-header-channel-pill"
-            aria-label="Telegram-канал"
+            className="sky-header-tg-round"
+            aria-label="Telegram-канал @na_severe_siyat"
+            title="Открыть Telegram-канал"
+            onClick={() => sendAnalytics('telegram_click', city, 'ru', 'header_round_btn')}
           >
-            <Send size={14} aria-hidden="true" />
-            <span>Канал @na_severe_siyat</span>
+            <Send size={18} fill="currentColor" aria-hidden="true" />
           </a>
         </header>
 
         <div className="sky-main">
           {demoScene && <div className="sky-demo-badge">{t.demo}</div>}
-          <p className="sky-eyebrow">🎮 ИНТЕРАКТИВНАЯ ОХОТА ЗА СИЯНИЕМ · КОЛЬСКИЙ ПОЛУОСТРОВ</p>
-          <h1 className="sky-landing-title">Выбей северное сияние! 🌟</h1>
-          <p className="sky-lead-text">
-            Прыгай, выбивай сияние из блока, переключай локации и смотри живой погодный радар!
-          </p>
 
-          {/* Interactive 8-bit Mario Scene */}
-          <MarioAuroraScene
-            city={city}
-            cloudCover={conditions?.cloudCover ?? null}
-            cloudLow={conditions?.cloudLow ?? null}
-            precipitationKind={conditions?.precipitationKind ?? 'none'}
-            signal={conditions?.signal ?? null}
-            auroraChance={conditions?.auroraModel ?? null}
-            kpIndex={data?.solarWind?.bz !== null && data?.solarWind?.bz !== undefined ? Math.max(1, Math.min(9, Number((3.6 - data.solarWind.bz * 0.35).toFixed(1)))) : 3.8}
-            onHit={() => sendAnalytics('mario_hit', city, 'ru', conditions?.signal)}
-          />
-
-          <nav className="sky-cities mario-city-nav" aria-label="Выбрать место">
+          {/* 2. THREE CITIES IN ONE ROW ON MOBILE */}
+          <nav className="mario-city-nav" aria-label="Выбрать город">
             {CITY_IDS.map((id) => (
               <button
                 key={id}
                 type="button"
                 className={city === id ? 'is-active' : ''}
                 aria-pressed={city === id}
-                onClick={() => {
-                  if (city !== id) {
-                    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-                      navigator.vibrate?.(12);
-                    }
-                    sendAnalytics('city_change', id, 'ru');
-                  }
-                  setCity(id);
-                }}
+                onClick={() => handleCityChange(id)}
               >
                 <span className="city-icon" aria-hidden="true">
                   {id === 'murmansk' ? '⚓' : id === 'teriberka' ? '🐋' : '⛷️'}
                 </span>
-                <span>{CITIES[id].nameRu}</span>
+                <span className="city-name">{CITIES[id].nameRu}</span>
+                {cityProgress[id] === 3 && (
+                  <span className="city-done-sparkle" aria-label="Пройдено">
+                    ✨
+                  </span>
+                )}
               </button>
             ))}
           </nav>
 
-          {/* Telegram Action Button: Elevated right below cities for maximum conversion */}
-          <section className="sky-telegram" aria-label={t.telegramTitle}>
-            <a
-              className="sky-telegram-button mario-cta-btn"
-              href={CHANNEL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => sendAnalytics('telegram_click', city, 'ru', conditions?.signal)}
-            >
-              <span className="sky-telegram-icon">
-                <Send size={22} fill="currentColor" aria-hidden="true" />
-              </span>
-              <span className="sky-telegram-label">
-                <strong>🍄 ВСТУПИТЬ В ОТРЯД ОХОТНИКОВ В TELEGRAM</strong>
-                <small>Координаты просветов туч и живые выезды с гидами каждую ночь</small>
-              </span>
-              <ArrowUpRight size={22} aria-hidden="true" />
-            </a>
-          </section>
+          {/* 3. BIG GAME SCENE */}
+          <MarioAuroraScene
+            ref={marioSceneRef}
+            city={city}
+            progress={cityProgress[city]}
+            onTap={handleGameTap}
+            soundEnabled={soundEnabled}
+            onToggleSound={() => setSoundEnabled((prev) => !prev)}
+          />
 
-          <section className="sky-result mario-result-box" aria-live="polite" aria-label={t.current}>
+          {/* 4. SHORT INSTRUCTION: HIDES AFTER FIRST SUCCESSFUL TAP */}
+          {!hasTapped && (
+            <div className="quest-hint-bar" aria-live="polite">
+              <span className="quest-hint-icon" aria-hidden="true">
+                👆
+              </span>
+              <span>Тапай — разгоняй тучи</span>
+            </div>
+          )}
+
+          {/* 5. RESERVED ACTION & VICTORY ZONE (FIXED MIN-HEIGHT TO PREVENT LAYOUT SHIFT) */}
+          <div className="quest-action-zone">
+            {cityProgress[city] < 3 ? (
+              <button
+                type="button"
+                className="quest-tap-btn"
+                onClick={() => marioSceneRef.current?.triggerJump()}
+              >
+                <span className="quest-btn-glow" aria-hidden="true" />
+                <span className="quest-btn-icon" aria-hidden="true">
+                  🍄
+                </span>
+                <span className="quest-btn-text">
+                  <strong>РАЗОГНАТЬ ТУЧИ</strong>
+                  <small>Удар {cityProgress[city] + 1} из 3</small>
+                </span>
+              </button>
+            ) : city === 'murmansk' ? (
+              <div className="quest-win-card">
+                <p className="quest-win-msg">Ты зажёг сияние в Мурманске ✨</p>
+                <button
+                  type="button"
+                  className="quest-next-btn"
+                  onClick={() => handleCityChange('teriberka')}
+                >
+                  <span>Теперь в Териберку →</span>
+                </button>
+              </div>
+            ) : city === 'teriberka' ? (
+              <div className="quest-win-card">
+                <p className="quest-win-msg">Сияет над Баренцевым морем ✨</p>
+                <button
+                  type="button"
+                  className="quest-next-btn"
+                  onClick={() => handleCityChange('kirovsk')}
+                >
+                  <span>Дальше — Кировск →</span>
+                </button>
+              </div>
+            ) : (
+              /* Kirovsk: Final Victory */
+              <div className="quest-win-card quest-win-card--final">
+                <p className="quest-win-msg">Теперь сияют и Хибины ✨</p>
+                <p className="quest-final-invite">А теперь — на настоящую охоту!</p>
+                <a
+                  href={CHANNEL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="quest-tg-main-btn"
+                  onClick={() => sendAnalytics('telegram_click', city, 'ru', 'quest_final_btn')}
+                >
+                  <Send size={20} fill="currentColor" aria-hidden="true" />
+                  <span>Продолжить в Telegram</span>
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* 6. SMOOTH SCROLL CUE TO WEATHER DATA */}
+          <div className="sky-scroll-cue">
+            <a href="#weather-now" className="sky-scroll-link">
+              <span>↓ Погода сейчас</span>
+            </a>
+          </div>
+
+          {/* 7. GENUINE WEATHER DATA BELOW THE GAME */}
+          <section id="weather-now" className="sky-result mario-result-box" aria-live="polite" aria-label={t.current}>
             <div className="sky-result-meta">
               <span className="sky-pulse" aria-hidden="true" />
-              РАДАР ПОГОДЫ И НЕБА
+              РАДАР ПОГОДЫ И НЕБА · {CITIES[city].nameRu.toUpperCase()}
             </div>
             <h2>{statusTitle}</h2>
             {statusBody && <p>{statusBody}</p>}
@@ -316,6 +358,21 @@ export default function HomePage() {
                 )}
               </div>
             )}
+
+            {/* Weather Block Telegram Banner */}
+            <div className="weather-tg-card">
+              <a
+                href={CHANNEL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="weather-tg-btn"
+                onClick={() => sendAnalytics('telegram_click', city, 'ru', 'weather_block_btn')}
+              >
+                <Send size={18} fill="currentColor" aria-hidden="true" />
+                <span>Оперативные спутниковые снимки в Telegram-канале</span>
+                <ArrowUpRight size={16} aria-hidden="true" />
+              </a>
+            </div>
           </section>
 
           {/* SEO & Hunter Guide Section for High Search Ranking */}

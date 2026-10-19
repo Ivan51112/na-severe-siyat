@@ -1116,35 +1116,68 @@
   opacity: 1 !important;
 }
 
-.sky-lead-text {
-  font-size: 14px;
-  color: #94a3b8;
-  max-width: 520px;
-  margin: 0 auto 16px;
-  line-height: 1.5;
-  text-align: center;
+/* =========================================================
+   HEADER DIRECT ROUND TELEGRAM BUTTON (SCREEN 1)
+========================================================= */
+.sky-header-tg-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border: 2px solid #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
+.sky-header-tg-round:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.7);
+  border-color: #7dd3fc;
+  color: #ffffff;
+}
+
+.sky-header-tg-round:active {
+  transform: scale(0.95);
+}
+
+/* =========================================================
+   THREE CITIES NAVIGATION (1 ROW ON ALL SCREENS)
+========================================================= */
 .mario-city-nav {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
-  margin-bottom: 20px;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto 12px;
 }
 
 .mario-city-nav button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  background: #0f172a;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 4px;
+  background: #0b1524;
   border: 2px solid #334155;
   border-radius: 10px;
   color: #cbd5e1;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mario-city-nav button:hover {
@@ -1154,14 +1187,431 @@
 }
 
 .mario-city-nav button.is-active {
-  background: #0369a1;
+  background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
   border-color: #38bdf8;
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
 }
 
 .mario-city-nav .city-icon {
-  font-size: 16px;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.mario-city-nav .city-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mario-city-nav .city-done-sparkle {
+  color: #facc15;
+  font-size: 11px;
+  animation: sparkleRotate 2s infinite ease-in-out;
+}
+
+@keyframes sparkleRotate {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.25); opacity: 1; }
+}
+
+/* =========================================================
+   MINIMAL HUD BAR (PROGRESS DOTS & SOUND)
+========================================================= */
+.mario-hud--minimal {
+  padding: 8px 14px;
+  background: #020617;
+  border-bottom: 2px solid #1e293b;
+}
+
+.quest-step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quest-step-label {
+  color: #94a3b8;
+  font-size: 8px;
+  letter-spacing: 0.5px;
+}
+
+.quest-step-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quest-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 1.5px solid #475569;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.quest-dot.is-active {
+  background: #38bdf8;
+  border-color: #bae6fd;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.9);
+  transform: scale(1.15);
+}
+
+/* =========================================================
+   INSTRUCTION HINT BAR (HIDES AFTER FIRST TAP)
+========================================================= */
+.quest-hint-bar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 auto 8px;
+  padding: 6px 14px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 20px;
+  color: #bae6fd;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  animation: pulseHint 2s infinite ease-in-out;
+}
+
+@keyframes pulseHint {
+  0%, 100% { opacity: 0.85; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+}
+
+.quest-hint-icon {
+  font-size: 14px;
+}
+
+/* =========================================================
+   RESERVED ACTION & VICTORY ZONE (NO LAYOUT SHIFTS)
+========================================================= */
+.quest-action-zone {
+  min-height: 94px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Interactive Tap Button */
+.quest-tap-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border: 3px solid #38bdf8;
+  border-radius: 12px;
+  color: #ffffff;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.25);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.quest-tap-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(2, 132, 199, 0.6);
+  border-color: #7dd3fc;
+}
+
+.quest-tap-btn:active {
+  transform: translateY(1px);
+}
+
+.quest-btn-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.quest-btn-icon {
+  font-size: 20px;
+}
+
+.quest-btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.quest-btn-text strong {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.quest-btn-text small {
+  font-size: 10px;
+  color: #bae6fd;
+  opacity: 0.9;
+  letter-spacing: 0.05em;
+  font-family: monospace, system-ui;
+}
+
+/* Victory Cards */
+.quest-win-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  animation: winFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes winFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.quest-win-msg {
+  color: #facc15;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  margin: 0;
+  text-shadow: 0 0 12px rgba(250, 204, 21, 0.5);
+}
+
+.quest-next-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 2px solid #34d399;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.45);
+  transition: all 0.15s ease;
+}
+
+.quest-next-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.65);
+}
+
+.quest-next-btn:active {
+  transform: translateY(1px);
+}
+
+/* Final Victory Card: Kirovsk -> Telegram */
+.quest-win-card--final {
+  gap: 6px;
+}
+
+.quest-final-invite {
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
+}
+
+.quest-tg-main-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border: 2px solid #38bdf8;
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 6px 24px rgba(2, 132, 199, 0.5), 0 0 20px rgba(56, 189, 248, 0.35);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 4px;
+}
+
+.quest-tg-main-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(2, 132, 199, 0.7), 0 0 30px rgba(56, 189, 248, 0.5);
+  border-color: #7dd3fc;
+  color: #ffffff;
+}
+
+.quest-tg-main-btn:active {
+  transform: translateY(1px);
+}
+
+/* =========================================================
+   SCROLL CUE TO REAL WEATHER
+========================================================= */
+.sky-scroll-cue {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.sky-scroll-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  transition: all 0.2s ease;
+}
+
+.sky-scroll-link:hover {
+  color: #38bdf8;
+  border-color: #38bdf8;
+  transform: translateY(2px);
+}
+
+/* =========================================================
+   CLOUD CURTAIN PARTING LAYERS (3 TAPS PROGRESSION)
+========================================================= */
+.quest-cloud-curtain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.curtain-cloud {
+  position: absolute;
+  background: radial-gradient(ellipse at 50% 50%, #334155 0%, #1e293b 70%, #0f172a 100%);
+  border-radius: 50%;
+  filter: blur(8px);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+}
+
+.cloud-far-left {
+  top: -20px;
+  left: -40px;
+  width: 220px;
+  height: 120px;
+}
+
+.cloud-far-right {
+  top: -20px;
+  right: -40px;
+  width: 220px;
+  height: 120px;
+}
+
+.cloud-center {
+  top: -10px;
+  left: 20%;
+  width: 260px;
+  height: 100px;
+}
+
+.cloud-center-low {
+  top: 15px;
+  left: 10%;
+  width: 320px;
+  height: 90px;
+  opacity: 0.85;
+}
+
+.curtain-fog-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.45) 80%, transparent 100%);
+  transition: opacity 0.6s ease;
+}
+
+/* STEP 0: Dense Overcast */
+.curtain-step-0 .cloud-far-left { transform: translateX(0); opacity: 0.95; }
+.curtain-step-0 .cloud-far-right { transform: translateX(0); opacity: 0.95; }
+.curtain-step-0 .cloud-center { transform: scale(1); opacity: 0.92; }
+.curtain-step-0 .cloud-center-low { transform: scale(1); opacity: 0.88; }
+.curtain-step-0 .curtain-fog-overlay { opacity: 0.85; }
+
+/* STEP 1: First Break (-30% clouds) */
+.curtain-step-1 .cloud-far-left { transform: translateX(-40px); opacity: 0.68; }
+.curtain-step-1 .cloud-far-right { transform: translateX(40px); opacity: 0.68; }
+.curtain-step-1 .cloud-center { transform: scale(0.65) translateY(-15px); opacity: 0.45; }
+.curtain-step-1 .cloud-center-low { transform: scale(0.7) translateY(-10px); opacity: 0.45; }
+.curtain-step-1 .curtain-fog-overlay { opacity: 0.45; }
+
+/* STEP 2: Wide Gap (-65% clouds) */
+.curtain-step-2 .cloud-far-left { transform: translateX(-90px); opacity: 0.35; }
+.curtain-step-2 .cloud-far-right { transform: translateX(90px); opacity: 0.35; }
+.curtain-step-2 .cloud-center { transform: scale(0.3) translateY(-30px); opacity: 0.15; }
+.curtain-step-2 .cloud-center-low { transform: scale(0.35) translateY(-25px); opacity: 0.15; }
+.curtain-step-2 .curtain-fog-overlay { opacity: 0.18; }
+
+/* STEP 3: Clear Skies (100% Dissolved) */
+.curtain-step-3 .cloud-far-left { transform: translateX(-180px); opacity: 0; }
+.curtain-step-3 .cloud-far-right { transform: translateX(180px); opacity: 0; }
+.curtain-step-3 .cloud-center { transform: scale(0); opacity: 0; }
+.curtain-step-3 .cloud-center-low { transform: scale(0); opacity: 0; }
+.curtain-step-3 .curtain-fog-overlay { opacity: 0; }
+
+/* VICTORY STAR BLOCK TRANSFORMATION */
+.question-block.is-victory-star-block {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #facc15 100%) !important;
+  border-color: #facc15 !important;
+  box-shadow: 0 0 25px rgba(250, 204, 21, 0.7), inset 0 0 10px rgba(255, 255, 255, 0.6) !important;
+  animation: starBlockGlow 1.5s infinite ease-in-out alternate;
+}
+
+@keyframes starBlockGlow {
+  0% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6)); }
+  100% { transform: scale(1.08); filter: drop-shadow(0 0 18px rgba(250, 204, 21, 0.9)); }
+}
+
+/* WEATHER BLOCK TELEGRAM CTA */
+.weather-tg-card {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #1e293b;
+}
+
+.weather-tg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 18px;
+  background: rgba(2, 132, 199, 0.15);
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  border-radius: 12px;
+  color: #38bdf8;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+.weather-tg-btn:hover {
+  background: rgba(2, 132, 199, 0.28);
+  border-color: #38bdf8;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .mario-result-box {
@@ -1171,15 +1621,4 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
-.mario-cta-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-  border: 2px solid #34d399 !important;
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35) !important;
-  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-}
-
-.mario-cta-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.5) !important;
-}
 
