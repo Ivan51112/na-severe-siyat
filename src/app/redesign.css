@@ -780,4 +780,162 @@
   filter: brightness(1.1);
 }
 
+/* =========================================================
+   «БЕЗ ПАНИКИ — ВЫДЫХАЙТЕ!» (DON'T PANIC BANNER)
+   ========================================================= */
+.dont-panic-card {
+  max-width: 680px;
+  margin: 0 auto 14px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(20, 44, 62, 0.9), rgba(11, 26, 38, 0.95));
+  border: 1.5px solid rgba(85, 230, 158, 0.35);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35), 0 0 15px rgba(85, 230, 158, 0.12);
+  text-align: center;
+}
+.dont-panic-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: rgba(85, 230, 158, 0.15);
+  border: 1px solid rgba(85, 230, 158, 0.3);
+  color: #6ef1ad;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.dont-panic-title {
+  margin: 0 0 6px;
+  font-size: clamp(19px, 3.2vw, 25px);
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 12px rgba(85, 230, 158, 0.3);
+}
+.dont-panic-text {
+  margin: 0;
+  font-size: 12.5px;
+  color: #cde0dd;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   COMPANION CHOICE («С ДЕТЬМИ» / «В ДВОЁМ»)
+   ========================================================= */
+.companion-choice-bar {
+  margin: 18px auto 0;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(251, 194, 235, 0.2);
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.companion-choice-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #e2bade;
+  text-transform: uppercase;
+}
+.companion-btn-group {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+.companion-btn {
+  flex: 1;
+  max-width: 240px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(251, 194, 235, 0.25);
+  background: rgba(22, 18, 32, 0.7);
+  color: #dfcadc;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.companion-btn:hover {
+  border-color: rgba(251, 194, 235, 0.6);
+  color: #ffffff;
+}
+.companion-btn.is-active {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(168, 85, 247, 0.25));
+  border-color: #f472b6;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(244, 114, 182, 0.3);
+}
+.c-btn-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.companion-focus-card {
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid;
+  margin-top: 4px;
+}
+.focus-family {
+  background: rgba(20, 36, 44, 0.85);
+  border-color: rgba(147, 197, 253, 0.3);
+}
+.focus-couple {
+  background: rgba(38, 20, 36, 0.85);
+  border-color: rgba(244, 114, 182, 0.3);
+}
+.focus-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.focus-icon {
+  font-size: 24px;
+  line-height: 1;
+  flex: none;
+}
+.focus-header h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.focus-header p {
+  margin: 0;
+  font-size: 12px;
+  color: #b7ccd0;
+  line-height: 1.4;
+}
+.focus-couple .focus-header p {
+  color: #ddc1d8;
+}
+.focus-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #d1e2e4;
+}
+.focus-couple .focus-list {
+  color: #ebdbe8;
+}
+.focus-list strong {
+  color: #ffffff;
+}
+
+
 

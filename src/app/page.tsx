@@ -10,6 +10,7 @@ import { MarioAuroraScene, MarioSceneHandle } from './MarioAuroraScene';
 type Language = 'ru' | 'zh';
 type DemoScene = 'aurora' | 'day' | 'clouds' | 'snow' | null;
 type UserMode = 'hunter' | 'dreamer';
+type DreamerCompanion = 'family' | 'couple';
 const CITY_IDS: CityId[] = ['murmansk', 'teriberka', 'kirovsk'];
 const CHANNEL_URL = process.env.NEXT_PUBLIC_TELEGRAM_URL?.trim() || 'https://t.me/na_severe_siyat';
 
@@ -134,6 +135,7 @@ export default function HomePage() {
   const [demoScene, setDemoScene] = useState<DemoScene>(null);
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
   const [userMode, setUserMode] = useState<UserMode>('hunter');
+  const [companion, setCompanion] = useState<DreamerCompanion>('family');
 
   // Quest progress (0..3) per city in current session
   const [cityProgress, setCityProgress] = useState<Record<CityId, number>>({
@@ -364,6 +366,15 @@ export default function HomePage() {
               ========================================================= */}
           {userMode === 'hunter' && (
             <>
+              {/* "БЕЗ ПАНИКИ — ВЫДЫХАЙТЕ!" (HITCHHIKER'S GUIDE TO THE NORTH) */}
+              <div className="dont-panic-card">
+                <span className="dont-panic-badge">🛸 АВТОСТОПОМ ПО ПОЛЯРНОМУ НЕБУ</span>
+                <h3 className="dont-panic-title">БЕЗ ПАНИКИ — ВЫДЫХАЙТЕ!</h3>
+                <p className="dont-panic-text">
+                  Вы уже на Севере, а значит — половина дела сделана. Мы ежеминутно сканируем спутники облачности, All-Sky камеры и трассы тундры. Ниже — ваш честный вердикт на эту ночь:
+                </p>
+              </div>
+
               {/* INSTANT FAMILY SKY VERDICT (FOR MOMS & DADS) */}
               <div
                 className={`sky-verdict-banner verdict-banner-${
@@ -702,9 +713,73 @@ export default function HomePage() {
                 <span className="mode-choice-badge">ГИД ДЛЯ ТЕХ, КТО ПЛАНИРУЕТ</span>
                 <h2 className="dreamer-hero-title">Как спланировать сказочную поездку за сиянием</h2>
                 <p className="dreamer-hero-p">
-                  Всё, что нужно знать жителям Москвы и Петербурга: от выбора идеального месяца до чек-листа тёплого чемодана, чтобы влюбиться в Русский Север всей семьёй.
+                  Всё, что нужно знать жителям Москвы и Петербурга: от выбора идеального месяца до чек-листа тёплого чемодана, чтобы влюбиться в Русский Север.
                 </p>
+
+                {/* COMPANION CHOICE BAR («С ДЕТЬМИ» ИЛИ «В ДВОЁМ») */}
+                <div className="companion-choice-bar" aria-label="С кем планируете поездку?">
+                  <span className="companion-choice-label">С КЕМ ПЛАНИРУЕТЕ ПОЕЗДКУ?</span>
+                  <div className="companion-btn-group">
+                    <button
+                      type="button"
+                      className={`companion-btn ${companion === 'family' ? 'is-active' : ''}`}
+                      onClick={() => {
+                        setCompanion('family');
+                        sendAnalytics('mode_change', city, 'ru', 'dreamer_family');
+                      }}
+                      aria-pressed={companion === 'family'}
+                    >
+                      <span className="c-btn-icon" aria-hidden="true">👨‍👩‍👧</span>
+                      <span>С детьми (Семья)</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`companion-btn ${companion === 'couple' ? 'is-active' : ''}`}
+                      onClick={() => {
+                        setCompanion('couple');
+                        sendAnalytics('mode_change', city, 'ru', 'dreamer_couple');
+                      }}
+                      aria-pressed={companion === 'couple'}
+                    >
+                      <span className="c-btn-icon" aria-hidden="true">💑</span>
+                      <span>Вдвоём / Романтика</span>
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* PERSONALIZED COMPANION FOCUS CARD */}
+              {companion === 'family' ? (
+                <div className="companion-focus-card focus-family" aria-label="Памятка для родителей">
+                  <div className="focus-header">
+                    <span className="focus-icon" aria-hidden="true">🧸 👶</span>
+                    <div>
+                      <h4>Забота о детях: 3 правила тёплого семейного приключения</h4>
+                      <p>Север с ребёнком — это восторг и сказка на всю жизнь, если соблюдать три простых правила:</p>
+                    </div>
+                  </div>
+                  <ul className="focus-list">
+                    <li><strong>Не дольше 20–25 минут на открытом воздухе:</strong> Чередуйте наблюдение неба с отогревом в тёплом салоне авто с термосом сладкого ягодного морса.</li>
+                    <li><strong>Запасные непромокаемые краги:</strong> Дети обожают трогать заполярный снег. Всегда держите во внутреннем кармане сухую вторую пару варежек.</li>
+                    <li><strong>Дневной досуг для сказки:</strong> Обязательно включите в поездку катание на собачьих упряжках (хаски), оленью ферму и тёплый «Музей разбитой ёлочной игрушки».</li>
+                  </ul>
+                </div>
+              ) : (
+                <div className="companion-focus-card focus-couple" aria-label="Памятка для двоих">
+                  <div className="focus-header">
+                    <span className="focus-icon" aria-hidden="true">🥂 ✨</span>
+                    <div>
+                      <h4>Романтический побег на двоих: секреты незабываемой ночи</h4>
+                      <p>Как провести время только вдвоём и привезти сказочные совместные воспоминания:</p>
+                    </div>
+                  </div>
+                  <ul className="focus-list">
+                    <li><strong>Стеклянные купола (Иглу):</strong> Забронируйте панорамный глэмпинг в тундре (Aurora Village) — сияние полыхает прямо над вашей кроватью.</li>
+                    <li><strong>Баня на берегу океана в Териберке:</strong> Незабываемый контраст жаркой парной и ледяного дыхания Баренцева моря под мерцающим небом.</li>
+                    <li><strong>Арктическая гастрономия при свечах:</strong> Свежайший камчатский краб, морские ежи и гребешки в панорамном ресторане на краю Земли.</li>
+                  </ul>
+                </div>
+              )}
 
               {/* 1. SEASONS CALENDAR */}
               <section className="hub-card" aria-label="Календарь сезонов полярного сияния">
@@ -730,11 +805,17 @@ export default function HomePage() {
               </section>
 
               {/* 2. PACKING CHECKLIST */}
-              <section className="hub-card" aria-label="Чек-лист экипировки для всей семьи">
+              <section className="hub-card" aria-label="Чек-лист экипировки">
                 <div className="hub-section-tag">🧳 ЧЕК-ЛИСТ ЧЕМОДАНА</div>
-                <h3 className="hub-title">Как одеть маму, папу и ребёнка, чтобы не замёрзнуть</h3>
+                <h3 className="hub-title">
+                  {companion === 'family'
+                    ? 'Как одеть маму, папу и ребёнка, чтобы не замёрзнуть'
+                    : 'Как одеться вдвоём: тепло, комфорт и стильные фотосессии'}
+                </h3>
                 <p className="hub-subtitle">
-                  Главный секрет северян — трёхслойная концепция. Вот 6 вещей, которые обязательно должны быть в багаже:
+                  {companion === 'family'
+                    ? 'Главный секрет северян — трёхслойная концепция. Вот 6 вещей, которые обязательно должны быть в багаже семьи:'
+                    : 'Секрет идеальной поездки для пары — непродуваемые слои и экипировка для совместных ночных съёмок:'}
                 </p>
 
                 <div className="packing-grid">
