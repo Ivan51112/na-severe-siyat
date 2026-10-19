@@ -9,8 +9,73 @@ import { MarioAuroraScene, MarioSceneHandle } from './MarioAuroraScene';
 
 type Language = 'ru' | 'zh';
 type DemoScene = 'aurora' | 'day' | 'clouds' | 'snow' | null;
+type UserMode = 'hunter' | 'dreamer';
 const CITY_IDS: CityId[] = ['murmansk', 'teriberka', 'kirovsk'];
 const CHANNEL_URL = process.env.NEXT_PUBLIC_TELEGRAM_URL?.trim() || 'https://t.me/na_severe_siyat';
+
+const SEASONS = [
+  {
+    period: 'СЕНТЯБРЬ — ОКТЯБРЬ',
+    tag: 'БАРХАТНЫЙ СЕЗОН',
+    title: 'Зеркальные озёра и тепло',
+    desc: 'Земля ещё без снега, озёра не замерзли — зелёное сияние фантастически двоится в глади воды. Температура около +5...–3°C, в Териберке у берега плавают горбатые киты.',
+    highlight: 'Шанс сияния: высокий · Комфортно для долгих прогулок',
+  },
+  {
+    period: 'НОЯБРЬ — ДЕКАБРЬ',
+    tag: 'ПОЛЯРНАЯ НОЧЬ',
+    title: 'Абсолютная тьма и сказка',
+    desc: 'Солнце не выходит из-за горизонта. Небо темнеет уже к 15:00, поэтому окно для наблюдений растягивается на 14 часов в сутки. Время первых сугробов и новогодних огней.',
+    highlight: 'Шанс сияния: максимальный · Одевайтесь в 3 слоя',
+  },
+  {
+    period: 'ЯНВАРЬ — ФЕВРАЛЬ',
+    tag: 'ПИК СЕЗОНА',
+    title: 'Хрустальная зима и мощные дуги',
+    desc: 'Классическая открыточная Арктика: заснеженные сопки, морозный сухой воздух вымораживает облачность, даря хрустально чистое небо. Самые яркие всполохи года.',
+    highlight: 'Шанс сияния: наивысший · Обязательны самогревы для обуви',
+  },
+  {
+    period: 'МАРТ — АПРЕЛЬ',
+    tag: 'РАВНОДЕНСТВИЕ',
+    title: 'Солнечные бури и горные лыжи',
+    desc: 'Период весеннего равноденствия знаменит взрывными геомагнитными вспышками. Днём солнечно и тепло (в Кировске открыт сезон горных лыж), а ночью полыхает небо.',
+    highlight: 'Шанс сияния: очень высокий · Идеально для лыжников',
+  },
+];
+
+const PACKING_LIST = [
+  {
+    icon: '🧣',
+    title: '1. Термобельё (базовый слой)',
+    desc: 'Шерсть мериноса или качественная спортивная синтетика. Главное правило Севера: никакого хлопка! Хлопок держит влагу и мгновенно охлаждает тело.',
+  },
+  {
+    icon: '🧥',
+    title: '2. Флис / шерсть (утепление)',
+    desc: 'Толстая флисовая толстовка или шерстяной свитер. Создает воздушную прослойку и не дает морозу добраться до тела.',
+  },
+  {
+    icon: '🧤',
+    title: '3. Мембранный пуховик',
+    desc: 'Непродуваемая ветрозащитная куртка с капюшоном. В тундре арктический ветер продувает обычное городское пальто за 2 минуты.',
+  },
+  {
+    icon: '🥾',
+    title: '4. Тёплая зимняя обувь',
+    desc: 'Сапоги ЭВА с многослойным войлочным чулком или зимний трекинг на размер больше обычного (под толстый носок).',
+  },
+  {
+    icon: '🔋',
+    title: '5. Пауэрбанк во внутренний карман',
+    desc: 'На морозе –20°C батарея любого смартфона садится за 10 минут. Держите внешний аккумулятор только во внутреннем кармане у тела.',
+  },
+  {
+    icon: '♨️',
+    title: '6. Самогревы для рук и ног',
+    desc: 'Химические стельки-грелки (продаются на маркетплейсах). Наклеили на носок — и ноги в тепле на протяжении 6 часов ночной охоты.',
+  },
+];
 
 const copy = {
   ru: {
@@ -68,6 +133,7 @@ export default function HomePage() {
   const [data, setData] = useState<LiveConditions | null>(null);
   const [demoScene, setDemoScene] = useState<DemoScene>(null);
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [userMode, setUserMode] = useState<UserMode>('hunter');
 
   // Quest progress (0..3) per city in current session
   const [cityProgress, setCityProgress] = useState<Record<CityId, number>>({
@@ -86,6 +152,8 @@ export default function HomePage() {
     setCity(initialCity);
     const scene = params.get('scene');
     if (scene === 'aurora' || scene === 'day' || scene === 'clouds' || scene === 'snow') setDemoScene(scene);
+    const requestedMode = params.get('mode');
+    if (requestedMode === 'dreamer' || requestedMode === 'hunter') setUserMode(requestedMode);
     sendAnalytics('page_view', initialCity, 'ru');
 
     let active = true;
@@ -226,359 +294,584 @@ export default function HomePage() {
         <div className="sky-main">
           {demoScene && <div className="sky-demo-badge">{t.demo}</div>}
 
-          {/* 2. THREE CITIES IN ONE ROW ON MOBILE */}
-          <nav className="mario-city-nav" aria-label="Выбрать город">
-            {CITY_IDS.map((id) => (
+          {/* DUAL AUDIENCE SELECTOR («В зале или с собой») */}
+          <section className="mode-choice-section" aria-label="Выбор персонального сценария">
+            <div className="mode-choice-header">
+              <span className="mode-choice-badge">ВЫБЕРИТЕ СВОЙ ЭКИПАЖ</span>
+              <h1 className="mode-choice-title">Вам сияние прямо сейчас или упаковать с собой?</h1>
+              <p className="mode-choice-sub">Два персональных сценария: для тех, кто уже на Кольском, и тех, кто мечтает в Москве</p>
+            </div>
+
+            <div className="mode-cards-grid">
+              {/* Card 1: Уже на Севере! */}
               <button
-                key={id}
                 type="button"
-                className={city === id ? 'is-active' : ''}
-                aria-pressed={city === id}
-                onClick={() => handleCityChange(id)}
+                className={`mode-card mode-card--hunter ${userMode === 'hunter' ? 'is-active' : ''}`}
+                onClick={() => {
+                  setUserMode('hunter');
+                  sendAnalytics('mode_change', city, 'ru', 'hunter');
+                }}
+                aria-pressed={userMode === 'hunter'}
               >
-                <span className="city-icon" aria-hidden="true">
-                  {id === 'murmansk' ? '⚓' : id === 'teriberka' ? '🐋' : '⛷️'}
-                </span>
-                <span className="city-name">{CITIES[id].nameRu}</span>
-                {cityProgress[id] === 3 && (
-                  <span className="city-done-sparkle" aria-label="Пройдено">
-                    ✨
-                  </span>
-                )}
+                <div className="mode-card-top">
+                  <span className="mode-card-avatar" aria-hidden="true">🚙 ❄️</span>
+                  <span className="mode-card-pill">В ОТЕЛЕ ИЛИ В АВТО</span>
+                </div>
+                <strong className="mode-card-heading">Уже на Севере!</strong>
+                <p className="mode-card-text">
+                  Штурман в тёплой ушанке. Куда рулить сегодня ночью, живой радар облачности, All-Sky камеры и вердикт неба.
+                </p>
+                <div className="mode-card-status">
+                  {userMode === 'hunter' ? (
+                    <span className="mode-card-selected">● Радар неба активен</span>
+                  ) : (
+                    <span className="mode-card-unselected">Включить радар неба →</span>
+                  )}
+                </div>
               </button>
-            ))}
-          </nav>
 
-          {/* 3. BIG GAME SCENE */}
-          <MarioAuroraScene
-            ref={marioSceneRef}
-            city={city}
-            progress={cityProgress[city]}
-            onTap={handleGameTap}
-            soundEnabled={soundEnabled}
-            onToggleSound={() => setSoundEnabled((prev) => !prev)}
-          />
+              {/* Card 2: Мечтаю на диване */}
+              <button
+                type="button"
+                className={`mode-card mode-card--dreamer ${userMode === 'dreamer' ? 'is-active' : ''}`}
+                onClick={() => {
+                  setUserMode('dreamer');
+                  sendAnalytics('mode_change', city, 'ru', 'dreamer');
+                }}
+                aria-pressed={userMode === 'dreamer'}
+              >
+                <div className="mode-card-top">
+                  <span className="mode-card-avatar" aria-hidden="true">☕ 🛋️</span>
+                  <span className="mode-card-pill">ПЛАНИРУЮ ИЗ ДОМА</span>
+                </div>
+                <strong className="mode-card-heading">Мечтаю на диване</strong>
+                <p className="mode-card-text">
+                  Уютная москвичка с кофе. Календарь сезонов, как одеть семью, 5 ошибок новичка и когда брать билеты.
+                </p>
+                <div className="mode-card-status">
+                  {userMode === 'dreamer' ? (
+                    <span className="mode-card-selected">● Путеводитель открыт</span>
+                  ) : (
+                    <span className="mode-card-unselected">Открыть путеводитель →</span>
+                  )}
+                </div>
+              </button>
+            </div>
+          </section>
 
-          {/* 4. SHORT INSTRUCTION: HIDES AFTER FIRST SUCCESSFUL TAP */}
-          {!hasTapped && (
-            <div className="quest-hint-bar" aria-live="polite">
-              <span className="quest-hint-icon" aria-hidden="true">
-                👆
-              </span>
-              <span>Тапай — разгоняй тучи</span>
+          {/* =========================================================
+              SCENARIO A: «УЖЕ НА СЕВЕРЕ!» (HUNTER MODE)
+              ========================================================= */}
+          {userMode === 'hunter' && (
+            <>
+              {/* INSTANT FAMILY SKY VERDICT (FOR MOMS & DADS) */}
+              <div
+                className={`sky-verdict-banner verdict-banner-${
+                  state === 'clear' ? 'clear' : state === 'patchy' ? 'patchy' : 'cloudy'
+                }`}
+                aria-live="polite"
+              >
+                <span className="verdict-traffic-light" aria-hidden="true">
+                  {state === 'clear' ? '🟢' : state === 'patchy' ? '🟡' : state === 'snow' ? '❄️' : '🔴'}
+                </span>
+                <div className="verdict-text-block">
+                  <span className="verdict-badge">
+                    {state === 'clear'
+                      ? 'ВЕРДИКТ ЭКИПАЖУ · МОЖНО ВЫЕЗЖАТЬ'
+                      : state === 'patchy'
+                      ? 'ВЕРДИКТ ЭКИПАЖУ · ЛОВИТЕ ОКНА В НЕБЕ'
+                      : 'ВЕРДИКТ ЭКИПАЖУ · ПЛОТНЫЕ ТУЧИ'}
+                  </span>
+                  <h2 className="verdict-title">
+                    {state === 'clear'
+                      ? `${CITIES[city].nameRu}: Небо открыто, звёзды видно!`
+                      : state === 'patchy'
+                      ? `${CITIES[city].nameRu}: Переменная облачность с разрывами`
+                      : `${CITIES[city].nameRu}: Небо плотно затянуто тучами`}
+                  </h2>
+                  <p className="verdict-desc">
+                    {state === 'clear'
+                      ? 'Шансы высокие (от 70%). Одевайтесь теплее в 3 слоя и выезжайте за город за пределы уличного освещения.'
+                      : state === 'patchy'
+                      ? 'Шансы умеренные (около 45%). Облака движутся: следите за камерами и ловите разрывы туч.'
+                      : 'Сквозь плотные тучи сияния с земли не видно. Лучше отдохните в тепле или проверьте Кировск.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* THREE CITIES IN ONE ROW ON MOBILE */}
+              <nav className="mario-city-nav" aria-label="Выбрать город">
+                {CITY_IDS.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={city === id ? 'is-active' : ''}
+                    aria-pressed={city === id}
+                    onClick={() => handleCityChange(id)}
+                  >
+                    <span className="city-icon" aria-hidden="true">
+                      {id === 'murmansk' ? '⚓' : id === 'teriberka' ? '🐋' : '⛷️'}
+                    </span>
+                    <span className="city-name">{CITIES[id].nameRu}</span>
+                    {cityProgress[id] === 3 && (
+                      <span className="city-done-sparkle" aria-label="Пройдено">
+                        ✨
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+
+              {/* 3. BIG GAME SCENE */}
+              <MarioAuroraScene
+                ref={marioSceneRef}
+                city={city}
+                progress={cityProgress[city]}
+                onTap={handleGameTap}
+                soundEnabled={soundEnabled}
+                onToggleSound={() => setSoundEnabled((prev) => !prev)}
+              />
+
+              {/* SHORT INSTRUCTION */}
+              {!hasTapped && (
+                <div className="quest-hint-bar" aria-live="polite">
+                  <span className="quest-hint-icon" aria-hidden="true">
+                    👆
+                  </span>
+                  <span>Тапай — разгоняй тучи над {CITIES[city].nameRu}</span>
+                </div>
+              )}
+
+              {/* ACTION & VICTORY ZONE */}
+              <div className="quest-action-zone">
+                {cityProgress[city] < 3 ? (
+                  <button
+                    type="button"
+                    className="quest-tap-btn"
+                    onClick={() => marioSceneRef.current?.triggerJump()}
+                  >
+                    <span className="quest-btn-glow" aria-hidden="true" />
+                    <span className="quest-btn-icon" aria-hidden="true">
+                      🍄
+                    </span>
+                    <span className="quest-btn-text">
+                      <strong>РАЗОГНАТЬ ТУЧИ</strong>
+                      <small>Удар {cityProgress[city] + 1} из 3</small>
+                    </span>
+                  </button>
+                ) : city === 'murmansk' ? (
+                  <div className="quest-win-card">
+                    <p className="quest-win-msg">Ты зажёг сияние в Мурманске ✨</p>
+                    <button
+                      type="button"
+                      className="quest-next-btn"
+                      onClick={() => handleCityChange('teriberka')}
+                    >
+                      <span>Теперь в Териберку →</span>
+                    </button>
+                  </div>
+                ) : city === 'teriberka' ? (
+                  <div className="quest-win-card">
+                    <p className="quest-win-msg">Сияет над Баренцевым морем ✨</p>
+                    <button
+                      type="button"
+                      className="quest-next-btn"
+                      onClick={() => handleCityChange('kirovsk')}
+                    >
+                      <span>Дальше — Кировск →</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="quest-win-card quest-win-card--final">
+                    <p className="quest-win-msg">Теперь сияют и Хибины ✨</p>
+                    <p className="quest-final-invite">А теперь — на настоящую охоту!</p>
+                    <a
+                      href={CHANNEL_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="quest-tg-main-btn"
+                      onClick={() => sendAnalytics('telegram_click', city, 'ru', 'quest_final_btn')}
+                    >
+                      <Send size={20} fill="currentColor" aria-hidden="true" />
+                      <span>Продолжить в Telegram</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* SMOOTH SCROLL CUE TO THE HUB */}
+              <div className="sky-scroll-cue">
+                <a href="#hub-overview" className="sky-scroll-link">
+                  <span>↓ Радар погоды, живые камеры и трассы</span>
+                </a>
+              </div>
+
+              <div id="hub-overview" className="sky-hub-wrapper">
+                {/* 7. GENUINE WEATHER & SOLAR RADAR */}
+                <section id="weather-now" className="sky-result mario-result-box" aria-live="polite" aria-label={t.current}>
+                  <div className="sky-result-meta">
+                    <span className="sky-pulse" aria-hidden="true" />
+                    РАДАР ПОГОДЫ И НЕБА · {CITIES[city].nameRu.toUpperCase()}
+                  </div>
+                  <h2>{statusTitle}</h2>
+                  {statusBody && <p>{statusBody}</p>}
+
+                  {state !== 'unavailable' && (
+                    <div className="sky-facts">
+                      <strong>
+                        {t.cloud} {Math.round(conditions!.cloudCover!)}%
+                      </strong>
+                      <span>{demoScene ? t.demo : updated ? t.updated + ' · ' + updated + ' МСК' : t.updated}</span>
+                    </div>
+                  )}
+
+                  {data && !demoScene && (
+                    <div className="sky-solar" aria-label={t.solar}>
+                      <span className="sky-solar-title">{t.solar}</span>
+                      {solarSpeed !== null && <strong>{Math.round(solarSpeed)} км/с</strong>}
+                      {solarBz !== null && (
+                        <strong>
+                          Bz {solarBz > 0 ? '+' : ''}
+                          {solarBz.toFixed(1)} нТ {solarBz < 0 ? '(щит открыт 👍)' : '(щит закрыт)'}
+                        </strong>
+                      )}
+                      {solarSpeed === null && solarBz === null && <span>{t.solarUnavailable}</span>}
+                      {auroraChance !== null && auroraChance !== undefined && (
+                        <span className="sky-aurora-chance">
+                          {t.auroraChance} <strong>{Math.round(auroraChance)}%</strong> · {t.withoutClouds}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Weather Block Telegram Banner */}
+                  <div className="weather-tg-card">
+                    <a
+                      href={CHANNEL_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="weather-tg-btn"
+                      onClick={() => sendAnalytics('telegram_click', city, 'ru', 'weather_block_btn')}
+                    >
+                      <Send size={18} fill="currentColor" aria-hidden="true" />
+                      <span>Оперативные спутниковые снимки в Telegram-канале</span>
+                      <ArrowUpRight size={16} aria-hidden="true" />
+                    </a>
+                  </div>
+                </section>
+
+                {/* 8. LIVE GROUND-TRUTH AI PULSE */}
+                <section className="hub-card hub-pulse-card" aria-label="ИИ-Пульс очевидцев с трасс и камер">
+                  <div className="hub-badge-live">
+                    <span className="live-dot" /> ИИ-ПУЛЬС С ТРАСС И КАМЕР ОНЛАЙН
+                  </div>
+                  <h3 className="hub-title">Где полыхает прямо сейчас (Сводка 7 источников)</h3>
+                  <p className="hub-subtitle">
+                    Нейросетевой мониторинг ночных all-sky камер AuroraCam, отчётов экспедиций nord ADVENTURE, DenisFox и постов туристов с Серебрянки и Териберки.
+                  </p>
+
+                  <div className="hub-pulse-grid">
+                    <div className={`pulse-zone-box ${city === 'murmansk' ? 'is-highlight' : ''}`}>
+                      <div className="pulse-zone-header">
+                        <span className="zone-name">⚓ Мурманск и трассы</span>
+                        <span className="zone-status-badge status-green">🟢 Подтверждено</span>
+                      </div>
+                      <div className="pulse-zone-detail">
+                        <strong>Серебрянское шоссе (км 25–40)</strong>
+                        <span>Зафиксированы разрывы облачности и дуга на северо-востоке. Камеры AuroraCam и экспедиции в полях.</span>
+                      </div>
+                    </div>
+
+                    <div className={`pulse-zone-box ${city === 'teriberka' ? 'is-highlight' : ''}`}>
+                      <div className="pulse-zone-header">
+                        <span className="zone-name">🐋 Териберка</span>
+                        <span className="zone-status-badge status-yellow">🟡 Переменная облачность</span>
+                      </div>
+                      <div className="pulse-zone-detail">
+                        <strong>Побережье Баренцева моря</strong>
+                        <span>Морской прибой, окна чистого неба в районе пляжа «Яйца дракона» и Батарейского водопада.</span>
+                      </div>
+                    </div>
+
+                    <div className={`pulse-zone-box ${city === 'kirovsk' ? 'is-highlight' : ''}`}>
+                      <div className="pulse-zone-header">
+                        <span className="zone-name">⛷️ Кировск (Хибины)</span>
+                        <span className="zone-status-badge status-blue">🏔️ Ясно над горами</span>
+                      </div>
+                      <div className="pulse-zone-detail">
+                        <strong>Озеро Большой Вудъявр / Плато</strong>
+                        <span>Горы удерживают морской циклон. Отличная видимость сопок вдали от городского освещения.</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* 9. THREE PATHS COMPARISON: FREE vs CAMERAS vs TOURS */}
+                <section className="hub-card hub-comparison-card" aria-label="3 пути охоты за сиянием">
+                  <div className="hub-section-tag">⚖️ ЧЕСТНЫЙ ВЫБОР ДЛЯ ТУРИСТА</div>
+                  <h3 className="hub-title">3 способа поймать сияние: плюсы и минусы</h3>
+                  <p className="hub-subtitle">Без рекламы и навязывания — объективный расклад по бюджету, рискам и комфорту.</p>
+
+                  <div className="comparison-cards">
+                    <div className="comp-item comp-free">
+                      <div className="comp-badge">БЕСПЛАТНО · 0 ₽</div>
+                      <h4>1. Своими силами на арендованном авто</h4>
+                      <ul className="comp-list">
+                        <li><span className="c-plus">+</span> Полная свобода маршрута и времени выезда.</li>
+                        <li><span className="c-plus">+</span> Нулевые затраты на экскурсии (экономия от 15 000 ₽ на двоих).</li>
+                        <li><span className="c-minus">-</span> Нужно понимать физику (облачность, отрицательный Bz, скорость ветра).</li>
+                        <li><span className="c-minus">-</span> Риск уехать наугад в снежный заряд или тучу.</li>
+                      </ul>
+                      <div className="comp-verdict"><strong>Вердикт:</strong> Идеально, если вы взяли авто и ориентируетесь по нашему радару.</div>
+                    </div>
+
+                    <div className="comp-item comp-cameras">
+                      <div className="comp-badge">ТЕХНОЛОГИИ · ПОДПИСКА</div>
+                      <h4>2. All-Sky ночные камеры (AuroraCam)</h4>
+                      <ul className="comp-list">
+                        <li><span className="c-plus">+</span> Глаза в реальном времени со светосильной оптикой на трассах.</li>
+                        <li><span className="c-plus">+</span> Мгновенные бот-уведомления, когда над вышкой полыхнуло небо.</li>
+                        <li><span className="c-minus">-</span> Камера показывает конкретную точку, за 20 км погода может отличаться.</li>
+                        <li><span className="c-minus">-</span> Требует платной подписки на сервис.</li>
+                      </ul>
+                      <div className="comp-verdict"><strong>Вердикт:</strong> Лучший помощник перед стартом, чтобы не греть машину впустую.</div>
+                    </div>
+
+                    <div className="comp-item comp-tours">
+                      <div className="comp-badge">КОМФОРТ · 5000–9000 ₽ / ЧЕЛ</div>
+                      <h4>3. Выезд с гидом на минивэне</h4>
+                      <ul className="comp-list">
+                        <li><span className="c-plus">+</span> Водитель знает сопки, напоит горячим чаем с брусникой.</li>
+                        <li><span className="c-plus">+</span> Качественные портретные снимки на зеркальный фотоаппарат.</li>
+                        <li><span className="c-minus">-</span> Дорого на семью или компанию (от 25 000 ₽ за 4–5 часов).</li>
+                        <li><span className="c-minus">-</span> Нет 100% гарантии: при глухом циклоне деньги обычно не возвращают.</li>
+                      </ul>
+                      <div className="comp-verdict"><strong>Вердикт:</strong> Подходит тем, кто совсем без авто и боится ночной тундры.</div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* MUSEUM BRIDGE IN HUNTER MODE */}
+                <section className="hub-card hub-museum-card" aria-label="Ночной эфир в Telegram-канале">
+                  <div className="museum-glow-ornament" aria-hidden="true">✨ 🎄 ✨</div>
+                  <h3 className="museum-title">Пока ждёшь сияния: согрейся северной сказкой</h3>
+                  <p className="museum-desc">
+                    В ожидании разрыва туч в машине на обочине тундры или в номере отеля — загляните в наш уютный Telegram-канал.
+                  </p>
+
+                  <div className="museum-features">
+                    <div className="museum-feat-item">
+                      <span className="feat-icon">🎬</span>
+                      <div>
+                        <strong>Ночной фильм-экскурсия</strong>
+                        <p>Единственный в мире «Музей разбитой ёлочной игрушки в Мурманске»: тайны советского стекла, игрушка-треска и ракета Юрия Гагарина, служившего в Заполярье.</p>
+                      </div>
+                    </div>
+                    <div className="museum-feat-item">
+                      <span className="feat-icon">🔮</span>
+                      <div>
+                        <strong>Ёлочный шар с сиянием — к возвращению домой</strong>
+                        <p>Выберите авторский шар ручной работы с Севера. Доставим в целости через Авито/СДЭК: посылка будет ждать вас дома в пункте выдачи и не разобьётся в самолёте!</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <a
+                    href={CHANNEL_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="museum-tg-cta"
+                    onClick={() => sendAnalytics('telegram_click', city, 'ru', 'hub_museum_btn')}
+                  >
+                    <Send size={18} fill="currentColor" aria-hidden="true" />
+                    <span>Зайти в тёплый Telegram-канал @na_severe_siyat</span>
+                    <ArrowUpRight size={17} aria-hidden="true" />
+                  </a>
+                </section>
+              </div>
+            </>
+          )}
+
+          {/* =========================================================
+              SCENARIO B: «МЕЧТАЮ НА ДИВАНЕ» (DREAMER MODE)
+              ========================================================= */}
+          {userMode === 'dreamer' && (
+            <div className="dreamer-wrapper">
+              {/* DREAMER HERO CARD */}
+              <div className="dreamer-hero-card">
+                <span className="mode-choice-badge">ГИД ДЛЯ ТЕХ, КТО ПЛАНИРУЕТ</span>
+                <h2 className="dreamer-hero-title">Как спланировать сказочную поездку за сиянием</h2>
+                <p className="dreamer-hero-p">
+                  Всё, что нужно знать жителям Москвы и Петербурга: от выбора идеального месяца до чек-листа тёплого чемодана, чтобы влюбиться в Русский Север всей семьёй.
+                </p>
+              </div>
+
+              {/* 1. SEASONS CALENDAR */}
+              <section className="hub-card" aria-label="Календарь сезонов полярного сияния">
+                <div className="hub-section-tag">📅 КАЛЕНДАРЬ СЕЗОНОВ</div>
+                <h3 className="hub-title">Когда лучше лететь в Мурманск: 4 времени года</h3>
+                <p className="hub-subtitle">
+                  Северное сияние длится с сентября по апрель. Выберите период под ваш характер и комфорт:
+                </p>
+
+                <div className="seasons-grid">
+                  {SEASONS.map((s, idx) => (
+                    <div key={idx} className="season-card">
+                      <div className="season-period">
+                        <span>{s.period}</span>
+                        <span className="season-tag">{s.tag}</span>
+                      </div>
+                      <h4 className="season-title">{s.title}</h4>
+                      <p className="season-desc">{s.desc}</p>
+                      <span className="season-highlight">{s.highlight}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* 2. PACKING CHECKLIST */}
+              <section className="hub-card" aria-label="Чек-лист экипировки для всей семьи">
+                <div className="hub-section-tag">🧳 ЧЕК-ЛИСТ ЧЕМОДАНА</div>
+                <h3 className="hub-title">Как одеть маму, папу и ребёнка, чтобы не замёрзнуть</h3>
+                <p className="hub-subtitle">
+                  Главный секрет северян — трёхслойная концепция. Вот 6 вещей, которые обязательно должны быть в багаже:
+                </p>
+
+                <div className="packing-grid">
+                  {PACKING_LIST.map((item, idx) => (
+                    <div key={idx} className="packing-card">
+                      <span className="packing-icon" aria-hidden="true">{item.icon}</span>
+                      <div className="packing-info">
+                        <strong>{item.title}</strong>
+                        <p>{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* 3. FIVE FATAL MISTAKES */}
+              <section className="hub-card hub-mistakes-card" aria-label="5 роковых ошибок новичка">
+                <div className="hub-section-tag">⚠️ ПРАКТИКА ОХОТЫ</div>
+                <h3 className="hub-title">5 главных ошибок новичка (почему 34.5% уезжают ни с чем)</h3>
+                <p className="hub-subtitle">Каждый третий турист терпит неудачу из-за типичных заблуждений. Вот как их избежать:</p>
+
+                <div className="mistakes-grid">
+                  <div className="mistake-card">
+                    <div className="mistake-num">01</div>
+                    <h4>Ждать сияния в городе под фонарями</h4>
+                    <p>Городское освещение Мурманска «съедает» до 85% контраста слабого сияния. Отъезжайте минимум на 15–25 км в тундру по Серебрянскому или Ленинградскому шоссе.</p>
+                  </div>
+
+                  <div className="mistake-card">
+                    <div className="mistake-num">02</div>
+                    <h4>Верить прогнозу погоды на неделю вперед</h4>
+                    <p>В Заполярье погоду формируют морские воздушные массы Баренцева моря. Циклон может смениться ясным небом за 45 минут. Доверяйте только живому спутнику за 1–2 часа до старта.</p>
+                  </div>
+
+                  <div className="mistake-card">
+                    <div className="mistake-num">03</div>
+                    <h4>Смотреть только на индекс Kp</h4>
+                    <p>При геомагнитной буре Kp 7 сквозь 100% низких туч вы увидите лишь темноту. <strong>Облачность всегда важнее космической активности!</strong> При ясном небе шикарное сияние видно даже при скромном Kp 2.</p>
+                  </div>
+
+                  <div className="mistake-card">
+                    <div className="mistake-num">04</div>
+                    <h4>Игнорировать параметр Bz (нужен минус!)</h4>
+                    <p>Если вектор Bz межпланетного поля положителен (+5...+10 нТл), магнитный щит Земли отражает поток плазмы. Для взрывного зажигания неба необходим <strong>отрицательный Bz со знаком минус</strong>.</p>
+                  </div>
+
+                  <div className="mistake-card">
+                    <div className="mistake-num">05</div>
+                    <h4>Снимать на смартфон со вспышкой</h4>
+                    <p>Вспышка осветит лишь снег перед ногами и испортит ночное зрение на 15 минут. Переведите телефон в «Ночной режим» (выдержка 3–10 секунд), отключите вспышку и обоприте смартфон о капот или штатив.</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* 4. MUSEUM OF BROKEN CHRISTMAS ORNAMENTS */}
+              <section className="hub-card hub-museum-card" aria-label="Сказка Севера и ёлочные игрушки">
+                <div className="museum-glow-ornament" aria-hidden="true">✨ 🎄 ✨</div>
+                <h3 className="museum-title">Привезите сказку домой: авторский ёлочный шар</h3>
+                <p className="museum-desc">
+                  Пока вы только планируете поездку — подарите себе или близким волшебную атмосферу Севера.
+                </p>
+
+                <div className="museum-features">
+                  <div className="museum-feat-item">
+                    <span className="feat-icon">🎬</span>
+                    <div>
+                      <strong>Виртуальная экскурсия</strong>
+                      <p>Единственный в мире «Музей разбитой ёлочной игрушки в Мурманске»: тайны советского стекла, игрушка-треска и ракета Юрия Гагарина, служившего в Заполярье.</p>
+                    </div>
+                  </div>
+                  <div className="museum-feat-item">
+                    <span className="feat-icon">🔮</span>
+                    <div>
+                      <strong>Ёлочный шар с сиянием — доставка до двери</strong>
+                      <p>Авторский шар ручной работы с Севера доставим через Авито/СДЭК прямо в ваш город. Посылка не разобьётся в чемодане самолёта и украсит домашнюю ёлку!</p>
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  href={CHANNEL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="museum-tg-cta"
+                  onClick={() => sendAnalytics('telegram_click', city, 'ru', 'dreamer_museum_btn')}
+                >
+                  <Send size={18} fill="currentColor" aria-hidden="true" />
+                  <span>Посмотреть шары и фильм в Telegram-канале @na_severe_siyat</span>
+                  <ArrowUpRight size={17} aria-hidden="true" />
+                </a>
+              </section>
+
+              {/* 5. DREAMER TELEGRAM NOTIFICATION BANNER */}
+              <div className="dreamer-tg-banner">
+                <span className="mode-choice-badge">БУДЬТЕ ПЕРВЫМИ</span>
+                <h3 className="dreamer-tg-title">Уведомим, когда начнётся главная вспышка сезона</h3>
+                <p className="dreamer-tg-desc">
+                  Подпишитесь на наш канал, чтобы не пропустить мощные солнечные бури, открытие дорог в Териберку и выход свежих выпусков о Севере.
+                </p>
+                <a
+                  href={CHANNEL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="dreamer-tg-btn"
+                  onClick={() => sendAnalytics('telegram_click', city, 'ru', 'dreamer_bottom_btn')}
+                >
+                  <Send size={18} fill="currentColor" aria-hidden="true" />
+                  <span>Подписаться на @na_severe_siyat</span>
+                </a>
+              </div>
             </div>
           )}
 
-          {/* 5. RESERVED ACTION & VICTORY ZONE (FIXED MIN-HEIGHT TO PREVENT LAYOUT SHIFT) */}
-          <div className="quest-action-zone">
-            {cityProgress[city] < 3 ? (
-              <button
-                type="button"
-                className="quest-tap-btn"
-                onClick={() => marioSceneRef.current?.triggerJump()}
-              >
-                <span className="quest-btn-glow" aria-hidden="true" />
-                <span className="quest-btn-icon" aria-hidden="true">
-                  🍄
-                </span>
-                <span className="quest-btn-text">
-                  <strong>РАЗОГНАТЬ ТУЧИ</strong>
-                  <small>Удар {cityProgress[city] + 1} из 3</small>
-                </span>
-              </button>
-            ) : city === 'murmansk' ? (
-              <div className="quest-win-card">
-                <p className="quest-win-msg">Ты зажёг сияние в Мурманске ✨</p>
-                <button
-                  type="button"
-                  className="quest-next-btn"
-                  onClick={() => handleCityChange('teriberka')}
-                >
-                  <span>Теперь в Териберку →</span>
-                </button>
-              </div>
-            ) : city === 'teriberka' ? (
-              <div className="quest-win-card">
-                <p className="quest-win-msg">Сияет над Баренцевым морем ✨</p>
-                <button
-                  type="button"
-                  className="quest-next-btn"
-                  onClick={() => handleCityChange('kirovsk')}
-                >
-                  <span>Дальше — Кировск →</span>
-                </button>
-              </div>
-            ) : (
-              /* Kirovsk: Final Victory */
-              <div className="quest-win-card quest-win-card--final">
-                <p className="quest-win-msg">Теперь сияют и Хибины ✨</p>
-                <p className="quest-final-invite">А теперь — на настоящую охоту!</p>
-                <a
-                  href={CHANNEL_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="quest-tg-main-btn"
-                  onClick={() => sendAnalytics('telegram_click', city, 'ru', 'quest_final_btn')}
-                >
-                  <Send size={20} fill="currentColor" aria-hidden="true" />
-                  <span>Продолжить в Telegram</span>
-                </a>
-              </div>
-            )}
-          </div>
+          {/* =========================================================
+              COMMON SECTION: FAQ ACCORDION (SEO POWERHOUSE)
+              ========================================================= */}
+          <section className="hub-card hub-faq-card" style={{ maxWidth: 780, margin: '24px auto 0' }} aria-label="Часто задаваемые вопросы о северном сиянии">
+            <div className="hub-section-tag">💡 БАЗА ЗНАНИЙ ОХОТНИКА</div>
+            <h3 className="hub-title">Вопросы и ответы о наблюдении в Мурманской области</h3>
 
-          {/* 6. SMOOTH SCROLL CUE TO THE HUB */}
-          <div className="sky-scroll-cue">
-            <a href="#hub-overview" className="sky-scroll-link">
-              <span>↓ Единый хаб охотника: радар, камеры и ошибки</span>
-            </a>
-          </div>
-
-          <div id="hub-overview" className="sky-hub-wrapper">
-            {/* 7. GENUINE WEATHER & SOLAR RADAR */}
-            <section id="weather-now" className="sky-result mario-result-box" aria-live="polite" aria-label={t.current}>
-              <div className="sky-result-meta">
-                <span className="sky-pulse" aria-hidden="true" />
-                РАДАР ПОГОДЫ И НЕБА · {CITIES[city].nameRu.toUpperCase()}
-              </div>
-              <h2>{statusTitle}</h2>
-              {statusBody && <p>{statusBody}</p>}
-
-              {state !== 'unavailable' && (
-                <div className="sky-facts">
-                  <strong>
-                    {t.cloud} {Math.round(conditions!.cloudCover!)}%
-                  </strong>
-                  <span>{demoScene ? t.demo : updated ? t.updated + ' · ' + updated + ' МСК' : t.updated}</span>
+            <div className="sky-faq-list">
+              {faqItems.map((item, idx) => (
+                <div key={idx} className={'sky-faq-item' + (faqOpen === idx ? ' is-open' : '')}>
+                  <button
+                    type="button"
+                    className="sky-faq-question"
+                    onClick={() => setFaqOpen(faqOpen === idx ? null : idx)}
+                    aria-expanded={faqOpen === idx}
+                  >
+                    <span>{item.q}</span>
+                    <ChevronDown size={16} aria-hidden="true" />
+                  </button>
+                  {faqOpen === idx && <p className="sky-faq-answer">{item.a}</p>}
                 </div>
-              )}
-
-              {data && !demoScene && (
-                <div className="sky-solar" aria-label={t.solar}>
-                  <span className="sky-solar-title">{t.solar}</span>
-                  {solarSpeed !== null && <strong>{Math.round(solarSpeed)} км/с</strong>}
-                  {solarBz !== null && (
-                    <strong>
-                      Bz {solarBz > 0 ? '+' : ''}
-                      {solarBz.toFixed(1)} нТ
-                    </strong>
-                  )}
-                  {solarSpeed === null && solarBz === null && <span>{t.solarUnavailable}</span>}
-                  {auroraChance !== null && auroraChance !== undefined && (
-                    <span className="sky-aurora-chance">
-                      {t.auroraChance} <strong>{Math.round(auroraChance)}%</strong> · {t.withoutClouds}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Weather Block Telegram Banner */}
-              <div className="weather-tg-card">
-                <a
-                  href={CHANNEL_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="weather-tg-btn"
-                  onClick={() => sendAnalytics('telegram_click', city, 'ru', 'weather_block_btn')}
-                >
-                  <Send size={18} fill="currentColor" aria-hidden="true" />
-                  <span>Оперативные спутниковые снимки в Telegram-канале</span>
-                  <ArrowUpRight size={16} aria-hidden="true" />
-                </a>
-              </div>
-            </section>
-
-            {/* 8. LIVE GROUND-TRUTH AI PULSE */}
-            <section className="hub-card hub-pulse-card" aria-label="ИИ-Пульс очевидцев с трасс и камер">
-              <div className="hub-badge-live">
-                <span className="live-dot" /> ИИ-ПУЛЬС С ТРАСС И КАМЕР ОНЛАЙН
-              </div>
-              <h3 className="hub-title">Где полыхает прямо сейчас (Сводка 7 источников)</h3>
-              <p className="hub-subtitle">
-                Нейросетевой мониторинг ночных all-sky камер AuroraCam, отчётов экспедиций nord ADVENTURE, DenisFox и постов туристов с Серебрянки и Териберки.
-              </p>
-
-              <div className="hub-pulse-grid">
-                <div className={`pulse-zone-box ${city === 'murmansk' ? 'is-highlight' : ''}`}>
-                  <div className="pulse-zone-header">
-                    <span className="zone-name">⚓ Мурманск и трассы</span>
-                    <span className="zone-status-badge status-green">🟢 Подтверждено</span>
-                  </div>
-                  <div className="pulse-zone-detail">
-                    <strong>Серебрянское шоссе (км 25–40)</strong>
-                    <span>Зафиксированы разрывы облачности и дуга на северо-востоке. Камеры AuroraCam и экспедиции в полях.</span>
-                  </div>
-                </div>
-
-                <div className={`pulse-zone-box ${city === 'teriberka' ? 'is-highlight' : ''}`}>
-                  <div className="pulse-zone-header">
-                    <span className="zone-name">🐋 Териберка</span>
-                    <span className="zone-status-badge status-yellow">🟡 Переменная облачность</span>
-                  </div>
-                  <div className="pulse-zone-detail">
-                    <strong>Побережье Баренцева моря</strong>
-                    <span>Морской прибой, окна чистого неба в районе пляжа «Яйца дракона» и Батарейского водопада.</span>
-                  </div>
-                </div>
-
-                <div className={`pulse-zone-box ${city === 'kirovsk' ? 'is-highlight' : ''}`}>
-                  <div className="pulse-zone-header">
-                    <span className="zone-name">⛷️ Кировск (Хибины)</span>
-                    <span className="zone-status-badge status-blue">🏔️ Ясно над горами</span>
-                  </div>
-                  <div className="pulse-zone-detail">
-                    <strong>Озеро Большой Вудъявр / Плато</strong>
-                    <span>Горы удерживают морской циклон. Отличная видимость сопок вдали от городского освещения.</span>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* 9. THREE PATHS COMPARISON: FREE vs CAMERAS vs TOURS */}
-            <section className="hub-card hub-comparison-card" aria-label="3 пути охоты за сиянием">
-              <div className="hub-section-tag">⚖️ ЧЕСТНЫЙ ВЫБОР ДЛЯ ТУРИСТА</div>
-              <h3 className="hub-title">3 способа поймать сияние: плюсы и минусы</h3>
-              <p className="hub-subtitle">Без рекламы и навязывания — объективный расклад по бюджету, рискам и комфорту.</p>
-
-              <div className="comparison-cards">
-                <div className="comp-item comp-free">
-                  <div className="comp-badge">БЕСПЛАТНО · 0 ₽</div>
-                  <h4>1. Своими силами на арендованном авто</h4>
-                  <ul className="comp-list">
-                    <li><span className="c-plus">+</span> Полная свобода маршрута и времени выезда.</li>
-                    <li><span className="c-plus">+</span> Нулевые затраты на экскурсии (экономия от 15 000 ₽ на двоих).</li>
-                    <li><span className="c-minus">-</span> Нужно понимать физику (облачность, отрицательный Bz, скорость ветра).</li>
-                    <li><span className="c-minus">-</span> Риск уехать наугад в снежный заряд или тучу.</li>
-                  </ul>
-                  <div className="comp-verdict"><strong>Вердикт:</strong> Идеально, если вы взяли авто и ориентируетесь по нашему радару.</div>
-                </div>
-
-                <div className="comp-item comp-cameras">
-                  <div className="comp-badge">ТЕХНОЛОГИИ · ПОДПИСКА</div>
-                  <h4>2. All-Sky ночные камеры (AuroraCam)</h4>
-                  <ul className="comp-list">
-                    <li><span className="c-plus">+</span> Глаза в реальном времени со светосильной оптикой на трассах.</li>
-                    <li><span className="c-plus">+</span> Мгновенные бот-уведомления, когда над вышкой полыхнуло небо.</li>
-                    <li><span className="c-minus">-</span> Камера показывает конкретную точку, за 20 км погода может отличаться.</li>
-                    <li><span className="c-minus">-</span> Требует платной подписки на сервис.</li>
-                  </ul>
-                  <div className="comp-verdict"><strong>Вердикт:</strong> Лучший помощник перед стартом, чтобы не греть машину впустую.</div>
-                </div>
-
-                <div className="comp-item comp-tours">
-                  <div className="comp-badge">КОМФОРТ · 5000–9000 ₽ / ЧЕЛ</div>
-                  <h4>3. Выезд с гидом на минивэне</h4>
-                  <ul className="comp-list">
-                    <li><span className="c-plus">+</span> Водитель знает сопки, напоит горячим чаем с брусникой.</li>
-                    <li><span className="c-plus">+</span> Качественные портретные снимки на зеркальный фотоаппарат.</li>
-                    <li><span className="c-minus">-</span> Дорого на семью или компанию (от 25 000 ₽ за 4–5 часов).</li>
-                    <li><span className="c-minus">-</span> Нет 100% гарантии: при глухом циклоне деньги обычно не возвращают.</li>
-                  </ul>
-                  <div className="comp-verdict"><strong>Вердикт:</strong> Подходит тем, кто совсем без авто и боится ночной тундры.</div>
-                </div>
-              </div>
-            </section>
-
-            {/* 10. FIVE FATAL MISTAKES */}
-            <section className="hub-card hub-mistakes-card" aria-label="5 роковых ошибок новичка">
-              <div className="hub-section-tag">⚠️ ПРАКТИКА ОХОТЫ</div>
-              <h3 className="hub-title">5 главных ошибок новичка (почему 34.5% уезжают ни с чем)</h3>
-              <p className="hub-subtitle">Каждый третий турист терпит неудачу из-за типичных заблуждений. Вот как их избежать:</p>
-
-              <div className="mistakes-grid">
-                <div className="mistake-card">
-                  <div className="mistake-num">01</div>
-                  <h4>Ждать сияния в городе под фонарями</h4>
-                  <p>Городское освещение Мурманска «съедает» до 85% контраста слабого сияния. Отъезжайте минимум на 15–25 км в тундру по Серебрянскому или Ленинградскому шоссе.</p>
-                </div>
-
-                <div className="mistake-card">
-                  <div className="mistake-num">02</div>
-                  <h4>Верить прогнозу погоды на неделю вперед</h4>
-                  <p>В Заполярье погоду формируют морские воздушные массы Баренцева моря. Циклон может смениться ясным небом за 45 минут. Доверяйте только живому спутнику за 1–2 часа до старта.</p>
-                </div>
-
-                <div className="mistake-card">
-                  <div className="mistake-num">03</div>
-                  <h4>Смотреть только на индекс Kp</h4>
-                  <p>При геомагнитной буре Kp 7 сквозь 100% низких туч вы увидите лишь темноту. <strong>Облачность всегда важнее космической активности!</strong> При ясном небе шикарное сияние видно даже при скромном Kp 2.</p>
-                </div>
-
-                <div className="mistake-card">
-                  <div className="mistake-num">04</div>
-                  <h4>Игнорировать параметр Bz (нужен минус!)</h4>
-                  <p>Если вектор Bz межпланетного поля положителен (+5...+10 нТл), магнитный щит Земли отражает поток плазмы. Для взрывного зажигания неба необходим <strong>отрицательный Bz со знаком минус</strong>.</p>
-                </div>
-
-                <div className="mistake-card">
-                  <div className="mistake-num">05</div>
-                  <h4>Снимать на смартфон со вспышкой</h4>
-                  <p>Вспышка осветит лишь снег перед ногами и испортит ночное зрение на 15 минут. Переведите телефон в «Ночной режим» (выдержка 3–10 секунд), отключите вспышку и обоприте смартфон о капот или штатив.</p>
-                </div>
-              </div>
-            </section>
-
-            {/* 11. FAQ ACCORDION (SEO POWERHOUSE) */}
-            <section className="hub-card hub-faq-card" aria-label="Часто задаваемые вопросы о северном сиянии">
-              <div className="hub-section-tag">💡 БАЗА ЗНАНИЙ ОХОТНИКА</div>
-              <h3 className="hub-title">Вопросы и ответы о наблюдении в Мурманской области</h3>
-
-              <div className="sky-faq-list">
-                {faqItems.map((item, idx) => (
-                  <div key={idx} className={'sky-faq-item' + (faqOpen === idx ? ' is-open' : '')}>
-                    <button
-                      type="button"
-                      className="sky-faq-question"
-                      onClick={() => setFaqOpen(faqOpen === idx ? null : idx)}
-                      aria-expanded={faqOpen === idx}
-                    >
-                      <span>{item.q}</span>
-                      <ChevronDown size={16} aria-hidden="true" />
-                    </button>
-                    {faqOpen === idx && <p className="sky-faq-answer">{item.a}</p>}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* 12. WARM ATMOSPHERIC BRIDGE TO TELEGRAM CHANNEL (MUSEUM & BALLS) */}
-            <section className="hub-card hub-museum-card" aria-label="Ночной эфир в Telegram-канале">
-              <div className="museum-glow-ornament" aria-hidden="true">✨ 🎄 ✨</div>
-              <h3 className="museum-title">Пока ждёшь сияния: согрейся северной сказкой</h3>
-              <p className="museum-desc">
-                В ожидании разрыва туч в машине на обочине тундры или в номере отеля — загляните в наш уютный Telegram-канал.
-              </p>
-
-              <div className="museum-features">
-                <div className="museum-feat-item">
-                  <span className="feat-icon">🎬</span>
-                  <div>
-                    <strong>Ночной фильм-экскурсия</strong>
-                    <p>Единственный в мире «Музей разбитой ёлочной игрушки в Мурманске»: тайны советского стекла, игрушка-треска и ракета Юрия Гагарина, служившего в Заполярье.</p>
-                  </div>
-                </div>
-                <div className="museum-feat-item">
-                  <span className="feat-icon">🔮</span>
-                  <div>
-                    <strong>Ёлочный шар с сиянием — к возвращению домой</strong>
-                    <p>Выберите авторский шар ручной работы с Севера. Доставим в целости через Авито/СДЭК: посылка будет ждать вас дома в пункте выдачи и не разобьётся в самолёте!</p>
-                  </div>
-                </div>
-              </div>
-
-              <a
-                href={CHANNEL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="museum-tg-cta"
-                onClick={() => sendAnalytics('telegram_click', city, 'ru', 'hub_museum_btn')}
-              >
-                <Send size={18} fill="currentColor" aria-hidden="true" />
-                <span>Зайти в тёплый Telegram-канал @na_severe_siyat</span>
-                <ArrowUpRight size={17} aria-hidden="true" />
-              </a>
-            </section>
-          </div>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
     </main>
