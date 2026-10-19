@@ -16,10 +16,32 @@ export interface AnalyticsEvent {
   utmCampaign?: string;
 }
 
-// In-memory buffer for development & serverless demonstration
-// In production, this can seamlessly write to SQLite/PostgreSQL/ClickHouse
+import fs from 'fs';
+import path from 'path';
+
+// In-memory buffer + persistent JSONL append log
 const eventStore: AnalyticsEvent[] = [];
-const MAX_EVENTS = 1000;
+const MAX_EVENTS = 2000;
+const DATA_DIR = path.join(process.cwd(), '.data');
+const DATA_FILE = path.join(DATA_DIR, 'analytics.jsonl');
+
+// Initialize and restore recent events on startup
+try {
+  if (typeof window === 'undefined') {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (fs.existsSync(DATA_FILE)) {
+      const content = fs.readFileSync(DATA_FILE, 'utf-8');
+      const lines = content.trim().split('\n').filter(Boolean);
+      for (const line of lines.slice(-MAX_EVENTS)) {
+        try {
+          eventStore.push(JSON.parse(line));
+        } catch {}
+      }
+    }
+  }
+} catch {}
 
 export function recordEvent(event: Omit<AnalyticsEvent, 'id' | 'timestamp'>): AnalyticsEvent {
   const newEvent: AnalyticsEvent = {
@@ -32,6 +54,17 @@ export function recordEvent(event: Omit<AnalyticsEvent, 'id' | 'timestamp'>): An
   if (eventStore.length > MAX_EVENTS) {
     eventStore.shift();
   }
+
+  // Persist to disk asynchronously
+  if (typeof window === 'undefined') {
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+      fs.appendFileSync(DATA_FILE, JSON.stringify(newEvent) + '\n', 'utf-8');
+    } catch {}
+  }
+
   return newEvent;
 }
 
